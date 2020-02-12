@@ -140,7 +140,6 @@ namespace Inria.Tactility
     public enum Connector4HandPart { None, Index, Thumb }
     public class TactilityStimulatorManager : MonoBehaviour
     {
-        public enum StimulationType { Default, Index }
 
         #region general settings
         [Header("General Settings")]
@@ -149,12 +148,8 @@ namespace Inria.Tactility
         private bool verbose = true;
 
         [SerializeField]
-        private float intensity = 2.5f; // between 0.1 and 9mA
+        private int initialFrequency = 35;
 
-        [SerializeField]
-        private int frequency = 35; // between 1 and 200hz
-
-        public StimulationType stimulation = StimulationType.Default;
         #endregion general setting
 
         #region port settings
@@ -216,6 +211,10 @@ namespace Inria.Tactility
 
         [SerializeField]
         [SouthernForge.Utils.ReadOnly]
+        private int frequency;
+
+        [SerializeField]
+        [SouthernForge.Utils.ReadOnly]
         private string batteryLevel;
 
         [SerializeField]
@@ -242,17 +241,9 @@ namespace Inria.Tactility
         // private Dictionary<string, Stimulation> stimulations = new Dictionary<string, Stimulation>();
         private Dictionary<int, Stimulation> stimulations = new Dictionary<int, Stimulation>();
 
-        private float currentResolution = 0.1f;
-        private int frequencyResolution = 1;
-
         private string deviceAnswer;
 
         #region unity events
-        // private void Awake()
-        // {
-        //     
-        // }
-
         private void OnEnable()
         {
             port = new SerialPort(portName, portBaudRate, portParity, portDataBits, portStopBits);
@@ -270,51 +261,6 @@ namespace Inria.Tactility
             InitStimulator();
         }
 
-        // void Start()
-        // {
-
-        // }
-
-        // Update is called once per frame
-        void Update()
-        {
-
-            if (Input.GetKeyDown(KeyCode.X)) port.Close();
-
-            if (Input.GetKeyDown(KeyCode.N))
-            {
-                if (stimulation == StimulationType.Default) stimulation = StimulationType.Index;
-                else stimulation = StimulationType.Default;
-            }
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
-
-                if (running) port.WriteLine("stim off");
-                else
-                {
-                    switch (stimulation)
-                    {
-                        case StimulationType.Default:
-                            port.WriteLine("stim on");
-                            if (verbose) print("[" + this.GetType().Name + "] default stim");
-                            break;
-                        case StimulationType.Index:
-                            port.WriteLine("stim index_finger");
-                            if (verbose) print("[" + this.GetType().Name + "] index_finger stim");
-                            break;
-                    }
-                }
-                running = !running;
-            }
-
-            if (Input.GetKeyDown(KeyCode.RightArrow)) IncreaseIntensity();
-            if (Input.GetKeyDown(KeyCode.LeftArrow)) DecreaseIntensity();
-
-            if (Input.GetKeyDown(KeyCode.UpArrow)) IncreseFrequency();
-            if (Input.GetKeyDown(KeyCode.DownArrow)) DecreaseFrequency();
-            
-        }
-
         private void OnDisable()
         {
             port.WriteLine("stim off");
@@ -324,7 +270,28 @@ namespace Inria.Tactility
         #endregion unity events
 
         #region public API
-        // public void Add(int id, string name, float intensity, int pulseWidth, Actions.HandPart handPart)
+        // TODO: experimental feature remove later
+        public void Add (Stimulation stim)
+        {
+            if (stimulations.ContainsKey(stim.id))
+            {
+                // update (do i need it? even if i'm using stim directly?)
+
+                // check if values are new, if they are, update command and star again stim
+                print(stim.GetStimCommand());
+                port.WriteLine(stim.GetStimCommand()); // write velec config
+                port.WriteLine("stim " + stim.name);    // start stim (if active is false, maybe it wont play)
+
+            } else
+            {
+                // insert (no need to check for connectors (there are hard-coded)
+                stimulations.Add(stim.id, stim); // set active as true in ctor
+                print(stim.GetStimCommand());
+                port.WriteLine(stim.GetStimCommand()); // write velec config
+                port.WriteLine("stim " + stim.name);    // start stim
+            }
+
+        }
         public void Add(VirtualElectrode virtualElectrode, Actions.HandPart handPart, float intensity, int pulseWidth)
         {
             if (stimulations.ContainsKey(virtualElectrode.id))
@@ -418,10 +385,20 @@ namespace Inria.Tactility
             }
             port.WriteLine("velec " + id.ToString() + " *selected 0");
         }
+
+        public void StopAll()
+        {
+            port.WriteLine("stim off");
+        }
+
+        public void SetFrequency (int val)
+        {
+            frequency = val;
+            port.WriteLine("freq " + val);
+        }
         #endregion public API
 
         #region private methods
-
         void InitStimulator ()
         {
             port.WriteLine("iam TACTILITY");
@@ -447,50 +424,9 @@ namespace Inria.Tactility
             firmware = rawAnswer.Remove(0, rawAnswer.IndexOf("firmware") + 9);
 
             port.WriteLine("elec 1 *pads_qty 32");
-            port.WriteLine("freq " + frequency);
-
-            // UpdateVirtualElectrode();
+            // port.WriteLine("freq " + initialFrequency);
+            SetFrequency(initialFrequency);
         }
-
-        void IncreaseIntensity ()
-        {
-            intensity += currentResolution;
-            intensity = Mathf.Clamp(intensity, 0, 9f);
-            UpdateVirtualElectrode();
-        }
-
-        void DecreaseIntensity ()
-        {
-            intensity -= currentResolution;
-            intensity = Mathf.Clamp(intensity, 0, 9f);
-            UpdateVirtualElectrode();
-        }
-
-        void IncreseFrequency()
-        {
-            frequency += frequencyResolution;
-            frequency = Mathf.Clamp(frequency, 1, 200);
-            UpdateFrequency();
-        }
-
-        void DecreaseFrequency()
-        {
-            frequency -= frequencyResolution;
-            frequency = Mathf.Clamp(frequency, 1, 200);
-            UpdateFrequency();
-
-        }
-
-        void UpdateVirtualElectrode()
-        {
-            port.WriteLine("velec 11 *name index_finger *elec 1 *cathodes 1=0,2=0,3=0,4=0,5=0,6=0,7=0,8=0,9=0,10=1,11=0,12=0,13=0,14=0,15=0,16=0,17=0,18=0,19=0,20=0,21=0,22=0,23=0,24=0,25=0,26=0,27=0,28=0,29=0,30=0,31=0,32=0, *amp 1=0,2=0,3=0,4=0,5=0,6=0,7=0,8=0,9=0,10=" + intensity + ",11=0,12=0,13=0,14=0,15=0,16=0,17=0,18=0,19=0,20=0,21=0,22=0,23=0,24=0,25=0,26=0,27=0,28=0,29=0,30=0,31=0,32=0, *width 1=0,2=0,3=0,4=0,5=0,6=0,7=0,8=0,9=0,10=300,11=0,12=0,13=0,14=0,15=0,16=0,17=0,18=0,19=0,20=0,21=0,22=0,23=0,24=0,25=0,26=0,27=0,28=0,29=0,30=0,31=0,32=0, *anode 16384 *selected 1 *sync 0");
-        }
-
-        void UpdateFrequency ()
-        {
-            port.WriteLine("freq " + frequency);
-        }
-
         #endregion private methods
     }
 
