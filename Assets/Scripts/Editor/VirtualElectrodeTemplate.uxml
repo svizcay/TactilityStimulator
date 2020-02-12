@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi:noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd"
+>
+-->
+<!-- <UXML xlmns="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements"> -->
+<UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="UnityEngine.UIElements"
+    xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
+    xsi:schemaLocation="UnityEngine.UIElements ../UIElementsSchema/UnityEngine.UIElements.xsd">
+
+<!--
+
+  <VisualElement class="row">
+    <Label text="ID" />
+  </VisualElement>
+  <VisualElement class="row">
+    <Label text="Name" />
+  </VisualElement>
+-->
+  <VisualElement name="title" class="row">
+    <Label text="Layout" class="header" />
+  </VisualElement>
+
+  <VisualElement class="array_layout">
+    <VisualElement class="row">
+      <Label text="M1" class="pad_label" />
+      <VisualElement name="Toggle" class="pad_toggle" />
+      <Label text="M2" class="pad_label" />
+      <VisualElement name="Toggle" class="pad_toggle" />
+    </VisualElement>
+
+    <VisualElement class="row">
+      <Label text="M3" class="pad_label" />
+      <VisualElement name="Toggle" class="pad_toggle" />
+      <Label text="M4" class="pad_label" />
+      <VisualElement name="Toggle" class="pad_toggle" />
+      <Label text="M5" class="pad_label" />
+      <VisualElement name="Toggle" class="pad_toggle" />
+    </VisualElement>
+
+    <VisualElement class="row">
+      <Label text="M6" class="pad_label" />
+      <VisualElement name="Toggle" class="pad_toggle" />
+      <Label text="M7" class="pad_label" />
+      <VisualElement name="Toggle" class="pad_toggle" />
+      <Label text="M8" class="pad_label" />
+      <VisualElement name="Toggle" class="pad_toggle" />
+    </VisualElement>
+  </VisualElement>
+
+</UXML>
+    
+<!--
+</engine:UXML>
+-->

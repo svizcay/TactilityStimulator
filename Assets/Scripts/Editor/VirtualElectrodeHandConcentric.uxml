@@ -1,0 +1,35 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement>
+        <Style src="VirtualElectrodeHandConcentric.uss" />
+        <ui:Label text="Layout" />
+    </ui:VisualElement>
+    <ui:VisualElement name="grid" style="align-items: center;">
+        <Style src="VirtualElectrodeHandConcentric.uss" />
+        <ui:VisualElement class="row">
+            <uie:EnumField label="C1" value="Center" name="M1" class="electrode" />
+            <uie:EnumField label="C2C3" value="Center" name="M2" class="electrode" />
+            <uie:EnumField label="C4" value="Center" name="M3" class="electrode" />
+        </ui:VisualElement>
+        <ui:VisualElement class="row">
+            <uie:EnumField label="C5" value="Center" name="M4" class="electrode" />
+            <uie:EnumField label="C6" value="Center" name="M5" class="electrode" />
+            <uie:EnumField label="C7" value="Center" name="M6" class="electrode" />
+            <uie:EnumField label="C8" value="Center" name="M7" class="electrode" />
+        </ui:VisualElement>
+        <ui:VisualElement class="row">
+            <uie:EnumField label="C9" value="Center" name="M8" class="electrode" />
+            <uie:EnumField label="C10" value="Center" name="M9" class="electrode" />
+            <uie:EnumField label="C11" value="Center" name="M10" class="electrode" />
+            <uie:EnumField label="C12" value="Center" name="M11" class="electrode" />
+        </ui:VisualElement>
+        <ui:VisualElement class="row">
+            <uie:EnumField label="C13" value="Center" name="M12" class="electrode" />
+            <uie:EnumField label="C14" value="Center" name="M13" class="electrode" />
+            <uie:EnumField label="C15" value="Center" name="M14" class="electrode" />
+            <uie:EnumField label="C16" value="Center" name="M15" class="electrode" />
+        </ui:VisualElement>
+        <ui:VisualElement class="row">
+            <uie:EnumField label="A" value="Center" name="M16" class="electrode" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

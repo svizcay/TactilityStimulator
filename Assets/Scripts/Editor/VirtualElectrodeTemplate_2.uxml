@@ -1,0 +1,23 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement name="title">
+        <Style src="VirtualElectrodeTemplate_2.uss" />
+        <ui:Label text="Layout" class="header" />
+    </ui:VisualElement>
+    <ui:VisualElement name="demo_array_layout2">
+        <Style src="VirtualElectrodeTemplate_2.uss" />
+        <ui:VisualElement class="row">
+            <uie:EnumField label="M1" name="M1" />
+            <uie:EnumField label="M2" name="M2" />
+        </ui:VisualElement>
+        <ui:VisualElement class="row">
+            <uie:EnumField label="M3" name="M3" />
+            <uie:EnumField label="M4" name="M4" />
+            <uie:EnumField label="M5" name="M5" />
+        </ui:VisualElement>
+        <ui:VisualElement class="row">
+            <uie:EnumField label="M6" name="M6" />
+            <uie:EnumField label="M7" name="M7" />
+            <uie:EnumField label="M8" name="M8" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,67 @@
+.row {
+    flex-direction: row;
+    justify-content: center;
+}
+
+.electrode-button {
+    background-image: url('/Assets/Images/electrode.png');
+    width: 45px;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0);
+    -unity-text-align: middle-center;
+    -unity-background-image-tint-color: rgb(255, 255, 255);
+}
+
+.electrode-btn {
+}
+
+#demo_array_layout2 .row {
+}
+
+#demo_array_layout2 .row EnumField {
+    flex-direction: column;
+    max-width: 100px;
+    min-width: 95px;
+}
+
+.cathode {
+    border-left-color: rgb(0, 235, 255);
+    border-right-color: rgb(0, 235, 255);
+    border-top-color: rgb(0, 235, 255);
+    border-bottom-color: rgb(0, 235, 255);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-top-left-radius: 2px;
+    border-bottom-left-radius: 2px;
+    border-top-right-radius: 2px;
+    border-bottom-right-radius: 2px;
+}
+
+#demo_array_layout2 EnumField.unity-enum-field Label.unity-base-field__label {
+    display: flex;
+    visibility: visible;
+    overflow: visible;
+    position: relative;
+    flex-shrink: initial;
+    flex-grow: initial;
+    flex-direction: column;
+    flex-wrap: no-wrap;
+    align-items: stretch;
+}
+
+.anode {
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-top-left-radius: 2px;
+    border-bottom-left-radius: 2px;
+    border-top-right-radius: 2px;
+    border-bottom-right-radius: 2px;
+    border-left-color: rgb(255, 141, 0);
+    border-right-color: rgb(255, 141, 0);
+    border-top-color: rgb(255, 141, 0);
+    border-bottom-color: rgb(255, 141, 0);
+}

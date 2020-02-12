@@ -1,0 +1,23 @@
+﻿/* VisualElement {} */
+
+/*
+.<name> is used for classes <Label class="someValue" />
+#<name> is used for names <Label name="someValue" />
+
+.header {
+	-unity-font-style: bold;
+}
+
+*/
+
+
+.row {
+	display: flex;
+	flex-direction: row;
+	/*justify-content: center;*/
+}
+
+.array_layout .row {
+	display: flex;
+	justify-content: center;
+}
