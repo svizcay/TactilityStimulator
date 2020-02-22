@@ -65,6 +65,10 @@ namespace Inria.Tactility.VirtualElectrodes
         public void OnEnable()
         {
             rootElem = new VisualElement();
+
+            // apart from the internal stylesheet, we can add even more
+            rootElem.styleSheets.Add(AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/Scripts/Editor/VirtualElectrodeCommon.uss"));
+
             visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/Scripts/Editor/VirtualElectrodeHandConcentric.uxml");
         }
 

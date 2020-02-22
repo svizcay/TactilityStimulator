@@ -1,6 +1,7 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
     <ui:VisualElement>
         <Style src="VirtualElectrodeHandConcentric.uss" />
+        <Style src="VirtualElectrodeCommon.uss" />
         <ui:Label text="Layout" />
     </ui:VisualElement>
     <ui:VisualElement name="grid" style="align-items: center;">

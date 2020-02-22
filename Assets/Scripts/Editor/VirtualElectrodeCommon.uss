@@ -1,0 +1,29 @@
+﻿.cathode {
+    border-left-color: rgb(0, 235, 255);
+    border-right-color: rgb(0, 235, 255);
+    border-top-color: rgb(0, 235, 255);
+    border-bottom-color: rgb(0, 235, 255);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-top-left-radius: 2px;
+    border-bottom-left-radius: 2px;
+    border-top-right-radius: 2px;
+    border-bottom-right-radius: 2px;
+}
+
+.anode {
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-top-left-radius: 2px;
+    border-bottom-left-radius: 2px;
+    border-top-right-radius: 2px;
+    border-bottom-right-radius: 2px;
+    border-left-color: rgb(255, 141, 0);
+    border-right-color: rgb(255, 141, 0);
+    border-top-color: rgb(255, 141, 0);
+    border-bottom-color: rgb(255, 141, 0);
+}
