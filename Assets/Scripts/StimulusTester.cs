@@ -22,6 +22,14 @@ namespace Inria.Tactility
         [Range(1, 200)]
         private int frequency = 35; // between 1 and 200hz
 
+        [Header("Temporal Settings")]
+
+        [SerializeField]
+        private AnimationCurve currentCurve;
+
+        [SerializeField]
+        private AnimationCurve pulseWidthCurve;
+
         [Header("Settings - Key bindings")]
 
         [SerializeField]
@@ -46,6 +54,11 @@ namespace Inria.Tactility
         private KeyCode decreaseFrequencyKeyCode = KeyCode.DownArrow;
 
         [Header("Debugging Info")]
+
+        [SerializeField]
+        [SouthernForge.Utils.ReadOnly]
+        private bool initialized = false;
+
         [SerializeField]
         [SouthernForge.Utils.ReadOnly]
         private bool running = false;
@@ -53,8 +66,9 @@ namespace Inria.Tactility
         // external components
         private TactilityStimulatorManager stimManager;
 
-        private int id = 11;    // velec id to use for testing
-        private new string name = "test";
+        // hardcoded values used for the test velec
+        private const int id = 11;    // velec id to use for testing
+        private new const string name = "test";
 
         // resolutions
         private float currentResolution = 0.1f;
@@ -72,80 +86,96 @@ namespace Inria.Tactility
         delegate bool PtrToKeyDownFn(KeyCode keycode);
         private PtrToKeyDownFn keyDownFn;
 
+        // stim manager is currently initialized OnEnable
+        // we need to wait until stimulator manager has everything set up corrently to start sending data.
         private void Awake()
         {
             stimManager = FindObjectOfType<TactilityStimulatorManager>();
-
-            // create stim
-            uint anode = 16384;
-            currentStim = new Stimulation(id, name, intensity, pulseWidth, new int[] { 10 }, anode);
-
-            // save initialValues
-            previousIntensity = intensity;
-            previousPulseWidth = pulseWidth;
-            previousFrequency = frequency;
-            previousKeyPressType = keyPressType;
-
-            // set default key press callback
-            if (keyPressType == KeyPressType.KeyPressedDown)
-            {
-                keyDownFn = Input.GetKeyDown;
-            } else
-            {
-                keyDownFn = Input.GetKey;
-            }
         }
 
+        private void Start()
+        {
+            StartCoroutine(Initialize());
+        }
 
         void Update()
         {
-
-            if (Input.GetKeyDown(toggleOnOffKeyCode))
+            if (initialized)
             {
+                if (Input.GetKeyDown(KeyCode.F))
+                {
+                    print("forcing stim on");
+                    stimManager.StartAll();
+                    running = true;
+                }
 
-                if (running)
+                if (Input.GetKeyDown(toggleOnOffKeyCode))
                 {
-                    // stimManager.StopAll();
-                    stimManager.Remove(currentStim.id);
+
+                    if (running)
+                    {
+                        // stimManager.StopAll();
+                        // stimManager.Remove(currentStim.id); // Remove deprecated. use StopStim
+                        stimManager.StopStim(currentStim.id);
+                    }
+                    else
+                    {
+                        // stimManager.Add(currentStim); // dont use add here anymore. just "enable" stim back again with "selected"
+                        stimManager.PlayStim(currentStim.id);
+                    }
+                    running = !running;
                 }
-                else
+
+                /*
+                // make sure this key code don't enable the stim if the stim should not be played
+                if (keyDownFn(increaseIntensityKeyCode)) IncreaseIntensity();
+                if (keyDownFn(decreaseIntensityKeyCode)) DecreaseIntensity();
+
+                if (keyDownFn(increasePulseWidthKeyCode)) IncreasePulseWidth();
+                if (keyDownFn(decreasePulseWidthKeyCode)) DecreasePulseWidth();
+
+                if (keyDownFn(increaseFrequencyKeyCode)) IncreseFrequency();
+                if (keyDownFn(decreaseFrequencyKeyCode)) DecreaseFrequency();
+
+                // update stim if the values were modifed (for now, it will enable the stimulus)
+                if (previousIntensity != intensity || previousPulseWidth != pulseWidth)
                 {
-                    stimManager.Add(currentStim);
+                    previousIntensity = intensity;
+                    previousPulseWidth = pulseWidth;
+
+                    currentStim.intensity = intensity;
+                    currentStim.pulseWidth = pulseWidth;
+
+                    stimManager.Add(currentStim); // currentStim is always active for now
+
+                    running = true;
                 }
-                running = !running;
+                
+                // check if we need to send data to the stimulator
+                if (previousFrequency != frequency)
+                {
+                    previousFrequency = frequency;
+                    stimManager.SetFrequency(frequency);
+                }
+                */
             }
+        }
 
-            // make sure this key code don't enable the stim if the stim should not be played
-            if (keyDownFn(increaseIntensityKeyCode)) IncreaseIntensity();
-            if (keyDownFn(decreaseIntensityKeyCode)) DecreaseIntensity();
-
-            if (keyDownFn(increasePulseWidthKeyCode)) IncreasePulseWidth();
-            if (keyDownFn(decreasePulseWidthKeyCode)) DecreasePulseWidth();
-
-            if (keyDownFn(increaseFrequencyKeyCode)) IncreseFrequency();
-            if (keyDownFn(decreaseFrequencyKeyCode)) DecreaseFrequency();
-
-            // update stim if the values were modifed (for now, it will enable the stimulus)
-            if (previousIntensity != intensity || previousPulseWidth != pulseWidth)
+        // gets called continously (ie, while moving a slider, gets called multiple times and not just on button release)
+        // shouldn't activa the stim if stim is off
+        private void OnValidate()
+        {
+            print(Time.frameCount + " OnValidate");
+            if (currentStim != null)
             {
-                previousIntensity = intensity;
-                previousPulseWidth = pulseWidth;
-
                 currentStim.intensity = intensity;
                 currentStim.pulseWidth = pulseWidth;
 
-                stimManager.Add(currentStim); // currentStim is always active for now
+                stimManager.UpdateStim(currentStim);
 
-                running = true;
+                previousIntensity = intensity;
+                previousPulseWidth = pulseWidth;
             }
-            
-            // check if we need to send data to the stimulator
-            if (previousFrequency != frequency)
-            {
-                previousFrequency = frequency;
-                stimManager.SetFrequency(frequency);
-            }
-
         }
 
 
@@ -196,6 +226,39 @@ namespace Inria.Tactility
         void UpdateVirtualElectrode()
         {
             // port.WriteLine("velec 11 *name index_finger *elec 1 *cathodes 1=0,2=0,3=0,4=0,5=0,6=0,7=0,8=0,9=0,10=1,11=0,12=0,13=0,14=0,15=0,16=0,17=0,18=0,19=0,20=0,21=0,22=0,23=0,24=0,25=0,26=0,27=0,28=0,29=0,30=0,31=0,32=0, *amp 1=0,2=0,3=0,4=0,5=0,6=0,7=0,8=0,9=0,10=" + intensity + ",11=0,12=0,13=0,14=0,15=0,16=0,17=0,18=0,19=0,20=0,21=0,22=0,23=0,24=0,25=0,26=0,27=0,28=0,29=0,30=0,31=0,32=0, *width 1=0,2=0,3=0,4=0,5=0,6=0,7=0,8=0,9=0,10=300,11=0,12=0,13=0,14=0,15=0,16=0,17=0,18=0,19=0,20=0,21=0,22=0,23=0,24=0,25=0,26=0,27=0,28=0,29=0,30=0,31=0,32=0, *anode 16384 *selected 1 *sync 0");
+        }
+
+        IEnumerator Initialize()
+        {
+            while (!stimManager.initialized)
+            {
+                yield return null;
+            }
+
+            // create stim
+            uint anode = 16384;
+            currentStim = new Stimulation(id, name, intensity, pulseWidth, new int[] { 10 }, anode, false);
+
+            // submit velec definition to stimManager
+            stimManager.SubmitStim(currentStim);
+
+            // save initialValues
+            previousIntensity = intensity;
+            previousPulseWidth = pulseWidth;
+            previousFrequency = frequency;
+            previousKeyPressType = keyPressType;
+
+            // set default key press callback
+            if (keyPressType == KeyPressType.KeyPressedDown)
+            {
+                keyDownFn = Input.GetKeyDown;
+            } else
+            {
+                keyDownFn = Input.GetKey;
+            }
+
+            initialized = true;
+
         }
     }
 

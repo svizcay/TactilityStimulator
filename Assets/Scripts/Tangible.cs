@@ -58,15 +58,6 @@ namespace Inria.Tactility
         {
             stimManager = FindObjectOfType<TactilityStimulatorManager>();
         }
-        void Start()
-        {
-            
-        }
-
-        void Update()
-        {
-            
-        }
         #endregion unity events
 
         #region haptic callbacks
@@ -135,16 +126,12 @@ namespace Inria.Tactility
             {
                 for (int i = 0; i < poke.virtualElectrodes.Length; ++i)
                 {
-                    stimManager.Remove(poke.virtualElectrodes[i].id);
+                    // stimManager.Remove(poke.virtualElectrodes[i].id); // Remove deprecated. use StopStim now
+                    stimManager.StopStim(poke.virtualElectrodes[i].id);
                 }
 
             }
         }
-
-
-
-        // public void OnPinch
-
         #endregion haptic callback;
     }
 

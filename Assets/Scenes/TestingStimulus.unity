@@ -338,6 +338,7 @@ MonoBehaviour:
   connector2HandPart: 0
   connector3HandPart: 0
   connector4HandPart: 1
+  initialized: 0
   running: 0
   frequency: 0
   batteryLevel: 
@@ -370,8 +371,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   intensity: 2
-  pulseWidth: 200
+  pulseWidth: 300
   frequency: 35
+  currentCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  pulseWidthCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
   keyPressType: 0
   toggleOnOffKeyCode: 32
   increaseIntensityKeyCode: 275
@@ -380,4 +393,5 @@ MonoBehaviour:
   decreasePulseWidthKeyCode: 106
   increaseFrequencyKeyCode: 273
   decreaseFrequencyKeyCode: 274
+  initialized: 0
   running: 0

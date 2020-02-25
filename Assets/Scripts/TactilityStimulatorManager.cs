@@ -25,21 +25,31 @@ namespace Inria.Tactility
 
     public class Stimulation
     {
+        // static data
         public int      id;     // velec id
         public string   name;
-        public bool     active;    // stimulator is executing it
+
+        // dynamic data
+        public bool     active;    // stimulator is executing it (stim <stimName> + selected=1)
         public float    intensity;    // current value of intensity
         public int      pulseWidth;    // current value of pulse width
 
         // they are already calculated for a specific connector
+        // static or dynamic data?
+        // let's keep it static for now
+        // TODO: make it dynamic later for spatio-temporal patterns
         public int[]    cathodes; 
         public uint     anodes; //
 
-        public Stimulation (int id, string name, float intensity, int pulseWidth, int[] cathodes, uint anodes)
+        /**
+         * cathodes: list of channel to used as cathodes (already taking into acocunt electrode type and connector being used)
+         * anodes: long int telling the bitmaks of channels used as anodes (already taking into account electrode type and connector being used)
+         * */
+        public Stimulation (int id, string name, float intensity, int pulseWidth, int[] cathodes, uint anodes, bool active = true)
         {
             this.id = id;
             this.name = name;
-            this.active = true;
+            this.active = active;
             this.intensity = intensity;
             this.pulseWidth = pulseWidth;
             this.cathodes = cathodes;
@@ -48,6 +58,7 @@ namespace Inria.Tactility
 
         /*
          * TODO: try to catch string if it's not modified that frequently or if it only changes few parameters
+         * this command only needs to be sent when the parameters have changed! (dont sent them every frame)
          * */ 
         public string GetStimCommand ()
         {
@@ -207,6 +218,10 @@ namespace Inria.Tactility
 
         [SerializeField]
         [SouthernForge.Utils.ReadOnly]
+        public bool initialized = false;
+
+        [SerializeField]
+        [SouthernForge.Utils.ReadOnly]
         private bool running = false;
 
         [SerializeField]
@@ -270,7 +285,53 @@ namespace Inria.Tactility
         #endregion unity events
 
         #region public API
-        // TODO: experimental feature remove later
+        // TODO: experimental feature. remove later
+        // this is supposed to be called just once (probably on Awake or Start)
+        public void SubmitStim(Stimulation stim)
+        {
+            if (!stimulations.ContainsKey(stim.id))
+            {
+                stimulations.Add(stim.id, stim); // set active as true in ctor
+
+                print(stim.GetStimCommand());
+                
+                port.WriteLine(stim.GetStimCommand()); // write velec config (submit stim to stimulator)
+
+                // start stim. shouldn't do anything if selected was false.
+                // the previous is not true at all. even if the velec was defined as selected=0
+                // by starting the stim using its name rather than the global command, the stim will start playing anyway
+                // we need to submit a global "stim on" at the beginning and then contorl each independently with selected true/false
+                // port.WriteLine("stim " + stim.name);    
+            } else
+            {
+                throw new Exception("There is already an existing stim with id=" + stim.id);
+            }
+
+        }
+
+        public void UpdateStim (Stimulation stim)
+        {
+            if (stimulations.ContainsKey(stim.id))
+            {
+                // update dynamic data (not related to active/inactive)
+                // range limits are going to be verified when creating string command
+                stimulations[stim.id].intensity = stim.intensity;
+                stimulations[stim.id].pulseWidth = stim.pulseWidth;
+
+                print(stimulations[stim.id].GetStimCommand()); // console
+
+                port.WriteLine(stimulations[stim.id].GetStimCommand()); // write velec new config
+                // do we need to write "stim <stimName>" again?. Let's do it just in case
+                // port.WriteLine("stim " + stimulations[stim.id].name);    // start stim (if active is false, maybe it wont play)
+
+            } else
+            {
+                throw new Exception("There is no existing stim with id=" + stim.id);
+            }
+
+        }
+
+        // TODO: experimental feature. remove later
         public void Add (Stimulation stim)
         {
             if (stimulations.ContainsKey(stim.id))
@@ -278,6 +339,7 @@ namespace Inria.Tactility
                 // update (do i need it? even if i'm using stim directly?)
 
                 // check if values are new, if they are, update command and star again stim
+                stimulations[stim.id].active = true;    // setting it to true just for now
                 print(stim.GetStimCommand());
                 port.WriteLine(stim.GetStimCommand()); // write velec config
                 port.WriteLine("stim " + stim.name);    // start stim (if active is false, maybe it wont play)
@@ -290,7 +352,6 @@ namespace Inria.Tactility
                 port.WriteLine(stim.GetStimCommand()); // write velec config
                 port.WriteLine("stim " + stim.name);    // start stim
             }
-
         }
         public void Add(VirtualElectrode virtualElectrode, Actions.HandPart handPart, float intensity, int pulseWidth)
         {
@@ -377,6 +438,8 @@ namespace Inria.Tactility
 
         }
 
+        // it doesn't actually remove a stim but stop it
+        // mark it as deprecated
         public void Remove (int id)
         {
             if (stimulations.ContainsKey(id))
@@ -384,6 +447,23 @@ namespace Inria.Tactility
                 stimulations[id].active = false;
             }
             port.WriteLine("velec " + id.ToString() + " *selected 0");
+        }
+
+        // it will update selected to 1.
+        // command: stim <stimName> need to be sent previously
+        public void PlayStim(int id)
+        {
+            SetStimOnOff(id, true);
+        }
+
+        public void StopStim(int id)
+        {
+            SetStimOnOff(id, false);
+        }
+
+        public void StartAll()
+        {
+            port.WriteLine("stim on"); // should start all stim with selected=1
         }
 
         public void StopAll()
@@ -426,6 +506,25 @@ namespace Inria.Tactility
             port.WriteLine("elec 1 *pads_qty 32");
             // port.WriteLine("freq " + initialFrequency);
             SetFrequency(initialFrequency);
+
+            port.WriteLine("stim on");
+
+            // if there was any exeption before (while writing to the port, we wont get to this point)
+            initialized = true; 
+        }
+
+        private void SetStimOnOff (int id, bool value)
+        {
+            if (stimulations.ContainsKey(id))
+            {
+                stimulations[id].active = value;
+                string valueStr = (value) ? "1" : "0";
+                port.WriteLine("velec " + id.ToString() + " *selected " + valueStr);
+                print("velec " + id.ToString() + " *selected " + valueStr);
+            } else {
+                throw new Exception("No available stim with id=" + id);
+            }
+
         }
         #endregion private methods
     }
