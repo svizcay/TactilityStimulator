@@ -166,9 +166,9 @@ namespace Inria.Tactility.Debugging
         public void SubmitVelecDef()
         {
             // update internal stim object and send it (bypass stimManager logic)
-            currentStim.active = velecDefSelected;
-            currentStim.intensity = intensity;
-            currentStim.pulseWidth = pulseWidth;
+            currentStim.Selected = velecDefSelected;
+            currentStim.Intensity = intensity;
+            currentStim.PulseWidth = pulseWidth;
             stimManager.SubmitVelecDefDirectly(currentStim); // velec def
         }
 
@@ -184,12 +184,12 @@ namespace Inria.Tactility.Debugging
 
         public void SubmitVelecSelected0 ()
         {
-            stimManager.SetSelected0(currentStim.id);
+            stimManager.SetSelected0(currentStim.ID);
         }
 
         public void SubmitPlayThisStim ()
         {
-            stimManager.PlayStim(currentStim.name);
+            stimManager.PlayStim(currentStim.Name);
         }
 
         public void SubmitFrequency ()

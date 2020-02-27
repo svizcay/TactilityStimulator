@@ -144,10 +144,10 @@ namespace Inria.Tactility.Debug
                 {
                     if (stimSelected)
                     {
-                        stimManager.DisableStim(currentStim.id);
+                        stimManager.DisableStim(currentStim.ID);
                     } else
                     {
-                        stimManager.EnableStim(currentStim.id);
+                        stimManager.EnableStim(currentStim.ID);
                     }
 
                     stimSelected = !stimSelected;
@@ -156,7 +156,7 @@ namespace Inria.Tactility.Debug
                 // check if player is trying to force playing stim by name
                 if (Input.GetKeyDown(emitStimStartByNameKeyCode))
                 {
-                    stimManager.PlayStim(currentStim.id);
+                    stimManager.PlayStim(currentStim.ID);
                 } else if (Input.GetKeyDown(emitStimEndKeyCode))
                 {
                     stimManager.StopAll();  // maybe it's not the right counter-part to "stim <stimName>"
@@ -204,8 +204,8 @@ namespace Inria.Tactility.Debug
             print(Time.frameCount + " OnValidate");
             if (currentStim != null)
             {
-                currentStim.intensity = intensity;
-                currentStim.pulseWidth = pulseWidth;
+                currentStim.Intensity = intensity;
+                currentStim.PulseWidth = pulseWidth;
 
                 stimManager.UpdateStim(currentStim, true, newSelectedValue);
                 // stimManager.UpdateStim(currentStim);
@@ -220,7 +220,7 @@ namespace Inria.Tactility.Debug
         {
             intensity += currentResolution;
             intensity = Mathf.Clamp(intensity, 0, 9f);
-            currentStim.intensity = intensity;
+            currentStim.Intensity = intensity;
             // UpdateVirtualElectrode();
         }
 
@@ -228,7 +228,7 @@ namespace Inria.Tactility.Debug
         {
             intensity -= currentResolution;
             intensity = Mathf.Clamp(intensity, 0, 9f);
-            currentStim.intensity = intensity;
+            currentStim.Intensity = intensity;
             // UpdateVirtualElectrode();
         }
 
@@ -236,7 +236,7 @@ namespace Inria.Tactility.Debug
         {
             pulseWidth += pulseWidthResolution; ;
             pulseWidth = Mathf.Clamp(pulseWidth, 30, 500);
-            currentStim.pulseWidth = pulseWidth;
+            currentStim.PulseWidth = pulseWidth;
             // UpdateVirtualElectrode();
         }
 
@@ -244,7 +244,7 @@ namespace Inria.Tactility.Debug
         {
             pulseWidth -= pulseWidthResolution;
             pulseWidth = Mathf.Clamp(pulseWidth, 30, 500);
-            currentStim.pulseWidth = pulseWidth;
+            currentStim.PulseWidth = pulseWidth;
             // UpdateVirtualElectrode();
         }
 

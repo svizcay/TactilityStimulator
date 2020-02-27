@@ -26,53 +26,157 @@ namespace Inria.Tactility
     public class Stimulation
     {
         // static data
-        public int      id;     // velec id
-        public string   name;
+        public int ID   // velec id
+        {
+            get;
+            private set;
+        }
+        public string Name // velec name
+        {
+            get;
+            private set;
+        }
 
         // dynamic data
-        public bool     active;    // stimulator is executing it (stim <stimName> + selected=1)
-        public float    intensity;    // current value of intensity
-        public int      pulseWidth;    // current value of pulse width
+
+        // stimulator is executing it (stim <stimName> + selected=1)
+        private bool _selected;
+        public bool Selected
+        {
+            get { return _selected; }
+            set {
+                this._selected = value;
+                UpdateCommandStrSelected();
+            }
+
+        }
+
+        private float    _intensity;    // current value of intensity
+        private int      _pulseWidth;    // current value of pulse width
 
         // they are already calculated for a specific connector
         // static or dynamic data?
         // let's keep it static for now
         // TODO: make it dynamic later for spatio-temporal patterns
-        public int[]    cathodes; 
+        private int[]    _cathodes;
         public uint     anodes; //
+
+        // whenever setting the catodes, we need to set commandStrIntensity and commandStrPulseWidth
+
+        // properties (values are checked when they are set)
+
+        public int[] Cathodes
+        {
+            get { return this._cathodes; }
+            set {
+                bool updateIntensityAndPulseWidthCommand = (this._cathodes == null) ? false : true;
+                this._cathodes = value;
+                UpdateCommandStrCathodes();
+
+                if (updateIntensityAndPulseWidthCommand)
+                {
+                    UpdateCommandStrItensity();
+                    UpdateCommandStrPulseWidth();
+                }
+            }
+
+        }
+
+
+        public float Intensity
+        {
+            get {
+                return this._intensity;
+            }
+
+            set {
+                this._intensity = CheckIntensity(value);
+                UpdateCommandStrItensity();
+            }
+        }
+
+        public int PulseWidth
+        {
+            get {
+                return this._pulseWidth;
+            }
+
+            set {
+                this._pulseWidth = CheckPulseWidth(value);
+                UpdateCommandStrPulseWidth();
+            }
+        }
+
+        private string commandStrCathodes = "";
+        private string commandStrIntensity = "";
+        private string commandStrPulseWidth = "";
+        private string commandStrSelected = "";
+
+        private bool commandStrDirty = true;
+        private string cachedCommand = "";
 
         /**
          * cathodes: list of channel to used as cathodes (already taking into acocunt electrode type and connector being used)
          * anodes: long int telling the bitmaks of channels used as anodes (already taking into account electrode type and connector being used)
          * */
-        public Stimulation (int id, string name, float intensity, int pulseWidth, int[] cathodes, uint anodes, bool active = true)
+        public Stimulation (int id, string name, float intensity, int pulseWidth, int[] cathodes, uint anodes, bool selected = true)
         {
             if (id < 10 || id > 16) throw new Exception("Invalid velec id=" + id + ". We can only used ids in the range [10-16]");
-            this.id = id;
-            this.name = name;
-            this.active = active;
+            this.ID = id;
+            this.Name = name;
+            this.Selected = selected;
 
-            this.intensity = intensity;
-            this.pulseWidth = pulseWidth;
-
-            this.cathodes = cathodes;
+            this.Cathodes = cathodes;
             this.anodes = anodes;
+
+            this.Intensity = intensity;     // check will be performed in setter
+            this.PulseWidth = pulseWidth;   // check will be performed in setter
         }
 
-        /*
-         * TODO: try to catch string if it's not modified that frequently or if it only changes few parameters
-         * this command only needs to be sent when the parameters have changed! (dont sent them every frame)
-         * */ 
-        public string GetStimCommand ()
+        /**
+         * Doesn't throw an exception but will warn the user about clampping.
+         * */
+        private float CheckIntensity (float val)
         {
+            float finalIntensity = val;
+
+            if (val < StimulationConstants.MIN_INTENSITY || val > StimulationConstants.MAX_INTENSITY)
+            {
+                UnityEngine.Debug.LogWarning("clamping intensity to ["
+                    + StimulationConstants.MIN_INTENSITY + "," + StimulationConstants.MAX_INTENSITY +
+                    "] range for stim id=" + ID + " name=" + Name);
+
+                finalIntensity = Mathf.Clamp(val, StimulationConstants.MIN_INTENSITY, StimulationConstants.MAX_INTENSITY);
+            }
+
+            return finalIntensity;
+        }
+
+        /**
+         * Doesn't throw an exception but will warn the user about clampping.
+         * */
+        private int CheckPulseWidth (int val)
+        {
+            int finalPulseWidth = val;
+            if (val < StimulationConstants.MIN_PULSE_WIDTH || val > StimulationConstants.MAX_PULSE_WIDTH)
+            {
+                UnityEngine.Debug.LogWarning("clamping pulseWidth to ["
+                    + StimulationConstants.MIN_PULSE_WIDTH + "," + StimulationConstants.MAX_PULSE_WIDTH +
+                    "] range for stim id=" + ID + " name=" + Name);
+
+                finalPulseWidth = Mathf.Clamp(val, StimulationConstants.MIN_PULSE_WIDTH, StimulationConstants.MAX_PULSE_WIDTH);
+            }
+
+            return finalPulseWidth;
+        }
+
+        private void UpdateCommandStrCathodes ()
+        {
+            List<int> cathodesList = new List<int>(_cathodes);
+
             StringBuilder builder = new StringBuilder();
 
-            List<int> cathodesList = new List<int>(cathodes);
-
-            builder.Append("velec ").Append(id.ToString())
-                .Append(" *name ").Append(name)
-                .Append(" *elec 1")
-                .Append(" *cathodes ");
+            builder.Append(" *cathodes ");
             for (int i = 1; i <= 32; ++i)
             {
                 if (cathodesList.Contains(i))
@@ -84,62 +188,99 @@ namespace Inria.Tactility
                 }
             }
 
-            builder.Append(" *amp ");
-            float finalIntensity = intensity;
-            if (intensity < StimulationConstants.MIN_INTENSITY || intensity > StimulationConstants.MAX_INTENSITY)
-            {
-                UnityEngine.Debug.LogWarning("clamping intensity to ["
-                    + StimulationConstants.MIN_INTENSITY + "," + StimulationConstants.MAX_INTENSITY +
-                    "] range for stim id=" + id + " name=" + name);
+            commandStrCathodes = builder.ToString();
 
-                finalIntensity = Mathf.Clamp(intensity, StimulationConstants.MIN_INTENSITY, StimulationConstants.MAX_INTENSITY);
+            commandStrDirty = true;
+        }
+
+        private void UpdateCommandStrSelected ()
+        {
+            if (Selected)
+            {
+                commandStrSelected = " *selected 1";
+            } else
+            {
+                commandStrSelected = " *selected 0";
             }
+
+            commandStrDirty = true;
+        }
+
+        /**
+         * This is supposed to be called when cathodes are well known and we have just updated the intensity value.
+         * Intensity value has already being clamped
+         * */
+        private void UpdateCommandStrItensity ()
+        {
+            List<int> cathodesList = new List<int>(_cathodes); // conver them to a list just for the sake of using Contains method. Use always a list later in the future
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append(" *amp ");
 
             for (int i = 1; i <= 32; ++i)
             {
                 if (cathodesList.Contains(i))
                 {
-                    builder.Append(i.ToString() + "=" + finalIntensity + ",");//trailing comma doesn't not matter at the end
+                    builder.Append(i.ToString() + "=" + Intensity + ",");//trailing comma doesn't not matter at the end
                 } else
                 {
                     builder.Append(i.ToString() + "=0,");//trailing comma doesn't not matter at the end
                 }
             }
+
+            commandStrIntensity = builder.ToString();
+
+            commandStrDirty = true;
+        }
+
+        private void UpdateCommandStrPulseWidth ()
+        {
+            List<int> cathodesList = new List<int>(_cathodes); // conver them to a list just for the sake of using Contains method. Use always a list later in the future
+
+            StringBuilder builder = new StringBuilder();
 
             builder.Append(" *width ");
 
-            int finalPulseWidth = pulseWidth;
-            if (pulseWidth < StimulationConstants.MIN_PULSE_WIDTH || pulseWidth > StimulationConstants.MAX_PULSE_WIDTH)
-            {
-                UnityEngine.Debug.LogWarning("clamping pulseWidth to ["
-                    + StimulationConstants.MIN_PULSE_WIDTH + "," + StimulationConstants.MAX_PULSE_WIDTH +
-                    "] range for stim id=" + id + " name=" + name);
-
-                finalPulseWidth = Mathf.Clamp(pulseWidth, StimulationConstants.MIN_PULSE_WIDTH, StimulationConstants.MAX_PULSE_WIDTH);
-            }
             for (int i = 1; i <= 32; ++i)
             {
                 if (cathodesList.Contains(i))
                 {
-                    builder.Append(i.ToString() + "=" + finalPulseWidth + ",");//trailing comma doesn't not matter at the end
+                    builder.Append(i.ToString() + "=" + PulseWidth + ",");//trailing comma doesn't not matter at the end
                 } else
                 {
                     builder.Append(i.ToString() + "=0,");//trailing comma doesn't not matter at the end
                 }
             }
 
-            builder.Append(" *anode " + anodes);
-            if (active)
+            commandStrPulseWidth = builder.ToString();
+
+            commandStrDirty = true;
+        }
+
+        /*
+         * TODO: try to catch string if it's not modified that frequently or if it only changes few parameters
+         * this command only needs to be sent when the parameters have changed! (dont sent them every frame)
+         * */ 
+        public string GetStimCommand ()
+        {
+            if (commandStrDirty)
             {
-                builder.Append(" *selected 1");
-            } else
-            {
-                builder.Append(" *selected 0");
+                StringBuilder builder = new StringBuilder();
+                builder.Append("velec ").Append(ID.ToString())
+                    .Append(" *name ").Append(Name)
+                    .Append(" *elec 1")
+                    .Append(commandStrCathodes)
+                    .Append(commandStrIntensity)
+                    .Append(commandStrPulseWidth)
+                    .Append(" *anode " + anodes)
+                    .Append(commandStrSelected)
+                    .Append(" *sync 0");
+
+                cachedCommand = builder.ToString();
+                commandStrDirty = false;
             }
 
-            builder.Append(" *sync 0");
-
-            return builder.ToString();
+            return cachedCommand;
         }
     }
 
@@ -387,25 +528,25 @@ namespace Inria.Tactility
          * */
         public void NewPlay(Stimulation stim)
         {
-            if (stimulations.ContainsKey(stim.id) && !stimulations[stim.id].active)
+            if (stimulations.ContainsKey(stim.ID) && !stimulations[stim.ID].Selected)
             {
-                stimulations[stim.id].active = true;
-                PlayStim(stimulations[stim.id].name);
+                stimulations[stim.ID].Selected = true;
+                PlayStim(stimulations[stim.ID].Name);
             }
         }
 
         public void NewStop(Stimulation stim)
         {
-            if (stimulations.ContainsKey(stim.id))
+            if (stimulations.ContainsKey(stim.ID))
             {
-                stimulations[stim.id].active = false;
+                stimulations[stim.ID].Selected = false;
             }
 
             // get list of stims that are running along with the one that we want to stop
             List<Stimulation> stimsToKeep = new List<Stimulation>();
             foreach (var storedStim in stimulations.Values)
             {
-                if (storedStim.active) stimsToKeep.Add(storedStim);
+                if (storedStim.Selected) stimsToKeep.Add(storedStim);
             }
 
             // stop all stims with global stim off
@@ -424,9 +565,9 @@ namespace Inria.Tactility
         // TESTS: let's stick to the following: velec definitions always use selected=0 so we dont start them by mistake with "stim on"
         public void SubmitStim(Stimulation stim)
         {
-            if (!stimulations.ContainsKey(stim.id))
+            if (!stimulations.ContainsKey(stim.ID))
             {
-                stimulations.Add(stim.id, stim); // set active as true in ctor
+                stimulations.Add(stim.ID, stim); // set active as true in ctor
 
                 string stimCommand = stim.GetStimCommand();
 
@@ -447,22 +588,22 @@ namespace Inria.Tactility
                 // port.WriteLine("stim " + stim.name);    
             } else
             {
-                throw new Exception("There is already an existing stim with id=" + stim.id);
+                throw new Exception("There is already an existing stim with id=" + stim.ID);
             }
 
         }
 
         public void UpdateStim (Stimulation stim, bool updateSelected=false, bool newSelected=true)
         {
-            if (stimulations.ContainsKey(stim.id))
+            if (stimulations.ContainsKey(stim.ID))
             {
                 // update dynamic data (not related to active/inactive)
                 // range limits are going to be verified when creating string command
-                stimulations[stim.id].intensity = stim.intensity;
-                stimulations[stim.id].pulseWidth = stim.pulseWidth;
-                if (updateSelected) stimulations[stim.id].active = newSelected;
+                stimulations[stim.ID].Intensity = stim.Intensity;
+                stimulations[stim.ID].PulseWidth = stim.PulseWidth;
+                if (updateSelected) stimulations[stim.ID].Selected = newSelected;
 
-                string command = stimulations[stim.id].GetStimCommand();
+                string command = stimulations[stim.ID].GetStimCommand();
 
                 print(command); // console
 
@@ -477,7 +618,7 @@ namespace Inria.Tactility
 
             } else
             {
-                throw new Exception("There is no existing stim with id=" + stim.id);
+                throw new Exception("There is no existing stim with id=" + stim.ID);
             }
 
         }
@@ -485,23 +626,23 @@ namespace Inria.Tactility
         // TODO: experimental feature. remove later
         public void Add (Stimulation stim)
         {
-            if (stimulations.ContainsKey(stim.id))
+            if (stimulations.ContainsKey(stim.ID))
             {
                 // update (do i need it? even if i'm using stim directly?)
 
                 // check if values are new, if they are, update command and star again stim
-                stimulations[stim.id].active = true;    // setting it to true just for now
+                stimulations[stim.ID].Selected = true;    // setting it to true just for now
                 print(stim.GetStimCommand());
                 port.WriteLine(stim.GetStimCommand()); // write velec config
-                port.WriteLine("stim " + stim.name);    // start stim (if active is false, maybe it wont play)
+                port.WriteLine("stim " + stim.Name);    // start stim (if active is false, maybe it wont play)
 
             } else
             {
                 // insert (no need to check for connectors (there are hard-coded)
-                stimulations.Add(stim.id, stim); // set active as true in ctor
+                stimulations.Add(stim.ID, stim); // set active as true in ctor
                 print(stim.GetStimCommand());
                 port.WriteLine(stim.GetStimCommand()); // write velec config
-                port.WriteLine("stim " + stim.name);    // start stim
+                port.WriteLine("stim " + stim.Name);    // start stim
             }
         }
         public void Add(VirtualElectrode virtualElectrode, Actions.HandPart handPart, float intensity, int pulseWidth)
@@ -511,20 +652,20 @@ namespace Inria.Tactility
                 // update stim params
 
                 // check if intensity or pulse width are new
-                bool newIntensity = !Mathf.Approximately(stimulations[virtualElectrode.id].intensity, intensity);
-                bool newPulseWidth = (stimulations[virtualElectrode.id].pulseWidth != pulseWidth);
+                bool newIntensity = !Mathf.Approximately(stimulations[virtualElectrode.id].Intensity, intensity);
+                bool newPulseWidth = (stimulations[virtualElectrode.id].PulseWidth != pulseWidth);
 
-                if (newIntensity || newPulseWidth || stimulations[virtualElectrode.id].active == false)
+                if (newIntensity || newPulseWidth || stimulations[virtualElectrode.id].Selected == false)
                 {
                     // update values and send new command to stimualtor
-                    stimulations[virtualElectrode.id].active = true;
-                    stimulations[virtualElectrode.id].intensity = intensity;
-                    stimulations[virtualElectrode.id].pulseWidth = pulseWidth;
+                    stimulations[virtualElectrode.id].Selected = true;
+                    stimulations[virtualElectrode.id].Intensity = intensity;
+                    stimulations[virtualElectrode.id].PulseWidth = pulseWidth;
 
                     print(stimulations[virtualElectrode.id].GetStimCommand());
                     port.WriteLine(stimulations[virtualElectrode.id].GetStimCommand());
 
-                    port.WriteLine("stim " + stimulations[virtualElectrode.id].name);
+                    port.WriteLine("stim " + stimulations[virtualElectrode.id].Name);
                 }
 
 
@@ -583,7 +724,7 @@ namespace Inria.Tactility
 
                 print(stim.GetStimCommand());
                 port.WriteLine(stim.GetStimCommand());
-                port.WriteLine("stim " + stim.name);
+                port.WriteLine("stim " + stim.Name);
 
             }
 
@@ -595,7 +736,7 @@ namespace Inria.Tactility
         {
             if (stimulations.ContainsKey(id))
             {
-                stimulations[id].active = false;
+                stimulations[id].Selected = false;
             }
             port.WriteLine("velec " + id.ToString() + " *selected 0");
         }
@@ -612,7 +753,7 @@ namespace Inria.Tactility
         {
             if (stimulations.ContainsKey(id))
             {
-                string command = "stim " + stimulations[id].name;
+                string command = "stim " + stimulations[id].Name;
                 port.WriteLine(command);
 
                 if (verbose)
@@ -703,7 +844,7 @@ namespace Inria.Tactility
         {
             if (stimulations.ContainsKey(id))
             {
-                stimulations[id].active = value;
+                stimulations[id].Selected = value;
                 string valueStr = (value) ? "1" : "0";
                 string commandStr = "velec " + id.ToString() + " *selected " + valueStr;
                 port.WriteLine(commandStr);
