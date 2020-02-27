@@ -2,13 +2,25 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Inria.Tactility
+namespace Inria.Tactility.Debug
 {
+    /**
+     * Utility to test different values for the electrical stimulation in runtime.
+     * */
     public class StimulusTester : MonoBehaviour
     {
         public enum KeyPressType { KeyPressedDown, KeyPressed } // down=true only the first time
 
         [Header("Settings")]
+
+        [SerializeField]
+        private bool newSelectedValue = false;
+
+        [SerializeField]
+        private VirtualElectrode virtualElectrode;
+
+        [SerializeField]
+        private bool stimSelected = false;
 
         [SerializeField]
         [Range(0f, 9f)]
@@ -35,8 +47,23 @@ namespace Inria.Tactility
         [SerializeField]
         private KeyPressType keyPressType = KeyPressType.KeyPressedDown;
 
+        // [SerializeField]
+        // private KeyCode toggleStimRunningKeyCode = KeyCode.Space;
+
         [SerializeField]
-        private KeyCode toggleOnOffKeyCode = KeyCode.Space;
+        private KeyCode emitStimStartByNameKeyCode = KeyCode.P;
+
+        [SerializeField]
+        private KeyCode emitStimEndKeyCode = KeyCode.Alpha0;
+
+        [SerializeField]
+        private KeyCode toggleStimSelectedKeyCode = KeyCode.LeftControl;
+
+        [SerializeField]
+        private KeyCode globalStimOnKeyCode = KeyCode.Alpha7;
+
+        [SerializeField]
+        private KeyCode globalStimOffKeyCode = KeyCode.Alpha8;
 
         [SerializeField]
         private KeyCode increaseIntensityKeyCode = KeyCode.RightArrow;
@@ -102,28 +129,37 @@ namespace Inria.Tactility
         {
             if (initialized)
             {
-                if (Input.GetKeyDown(KeyCode.F))
+                // check if we switch between global on/off
+                if (Input.GetKeyDown(globalStimOnKeyCode))
                 {
-                    print("forcing stim on");
-                    stimManager.StartAll();
-                    running = true;
+                    stimManager.StartAll(); // stim on
+
+                } else if (Input.GetKeyDown(globalStimOffKeyCode))
+                {
+                    stimManager.StopAll(); // stim off
                 }
 
-                if (Input.GetKeyDown(toggleOnOffKeyCode))
+                // toggle betwenn stim selected or not
+                if (Input.GetKeyDown(toggleStimSelectedKeyCode))
                 {
+                    if (stimSelected)
+                    {
+                        stimManager.DisableStim(currentStim.id);
+                    } else
+                    {
+                        stimManager.EnableStim(currentStim.id);
+                    }
 
-                    if (running)
-                    {
-                        // stimManager.StopAll();
-                        // stimManager.Remove(currentStim.id); // Remove deprecated. use StopStim
-                        stimManager.StopStim(currentStim.id);
-                    }
-                    else
-                    {
-                        // stimManager.Add(currentStim); // dont use add here anymore. just "enable" stim back again with "selected"
-                        stimManager.PlayStim(currentStim.id);
-                    }
-                    running = !running;
+                    stimSelected = !stimSelected;
+                }
+
+                // check if player is trying to force playing stim by name
+                if (Input.GetKeyDown(emitStimStartByNameKeyCode))
+                {
+                    stimManager.PlayStim(currentStim.id);
+                } else if (Input.GetKeyDown(emitStimEndKeyCode))
+                {
+                    stimManager.StopAll();  // maybe it's not the right counter-part to "stim <stimName>"
                 }
 
                 /*
@@ -171,7 +207,8 @@ namespace Inria.Tactility
                 currentStim.intensity = intensity;
                 currentStim.pulseWidth = pulseWidth;
 
-                stimManager.UpdateStim(currentStim);
+                stimManager.UpdateStim(currentStim, true, newSelectedValue);
+                // stimManager.UpdateStim(currentStim);
 
                 previousIntensity = intensity;
                 previousPulseWidth = pulseWidth;
@@ -237,7 +274,7 @@ namespace Inria.Tactility
 
             // create stim
             uint anode = 16384;
-            currentStim = new Stimulation(id, name, intensity, pulseWidth, new int[] { 10 }, anode, false);
+            currentStim = new Stimulation(id, name, intensity, pulseWidth, new int[] { 10 }, anode, stimSelected);
 
             // submit velec definition to stimManager
             stimManager.SubmitStim(currentStim);

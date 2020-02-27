@@ -47,11 +47,14 @@ namespace Inria.Tactility
          * */
         public Stimulation (int id, string name, float intensity, int pulseWidth, int[] cathodes, uint anodes, bool active = true)
         {
+            if (id < 10 || id > 16) throw new Exception("Invalid velec id=" + id + ". We can only used ids in the range [10-16]");
             this.id = id;
             this.name = name;
             this.active = active;
+
             this.intensity = intensity;
             this.pulseWidth = pulseWidth;
+
             this.cathodes = cathodes;
             this.anodes = anodes;
         }
@@ -85,7 +88,7 @@ namespace Inria.Tactility
             float finalIntensity = intensity;
             if (intensity < StimulationConstants.MIN_INTENSITY || intensity > StimulationConstants.MAX_INTENSITY)
             {
-                Debug.LogWarning("clamping intensity to ["
+                UnityEngine.Debug.LogWarning("clamping intensity to ["
                     + StimulationConstants.MIN_INTENSITY + "," + StimulationConstants.MAX_INTENSITY +
                     "] range for stim id=" + id + " name=" + name);
 
@@ -108,7 +111,7 @@ namespace Inria.Tactility
             int finalPulseWidth = pulseWidth;
             if (pulseWidth < StimulationConstants.MIN_PULSE_WIDTH || pulseWidth > StimulationConstants.MAX_PULSE_WIDTH)
             {
-                Debug.LogWarning("clamping pulseWidth to ["
+                UnityEngine.Debug.LogWarning("clamping pulseWidth to ["
                     + StimulationConstants.MIN_PULSE_WIDTH + "," + StimulationConstants.MAX_PULSE_WIDTH +
                     "] range for stim id=" + id + " name=" + name);
 
@@ -159,6 +162,7 @@ namespace Inria.Tactility
         private bool verbose = true;
 
         [SerializeField]
+        [Range(1, 200)]
         private int initialFrequency = 35;
 
         #endregion general setting
@@ -270,7 +274,7 @@ namespace Inria.Tactility
                 if (verbose) print("[" + this.GetType().Name + "] Connected to bluetooth device");
             } catch (Exception e)
             {
-                Debug.LogError("Error trying to open port " + portName + ": " + e.Message);
+                UnityEngine.Debug.LogError("Error trying to open port " + portName + ": " + e.Message);
             }
 
             InitStimulator();
@@ -285,17 +289,156 @@ namespace Inria.Tactility
         #endregion unity events
 
         #region public API
+
+        #region public direct API (no processing, just stim commands)
+
+        /**
+         * It just emits the stim on command. It doesn't sets any stim.active=true property.
+         */
+        public void StartAll()
+        {
+            port.WriteLine("stim on"); // should start all stim with selected=1
+
+            if (verbose)
+            {
+                deviceAnswer = port.ReadLine();
+                print("stim on -> " + deviceAnswer);
+            }
+        }
+
+        /**
+         * It just emits the stim off command. It doesn't actually sets stim.active=false property.
+         */
+        public void StopAll()
+        {
+            port.WriteLine("stim off");
+
+            if (verbose)
+            {
+                deviceAnswer = port.ReadLine();
+                print("stim off -> " + deviceAnswer);
+            }
+        }
+
+        /**
+         * It just emits the freq command. It doesn't check or update any class data memeber.
+         */
+        public void SetFrequency (int val)
+        {
+            frequency = val;
+            port.WriteLine("freq " + val);
+        }
+
+        /**
+         * Low level call just meant for emitting stim <stimName> command.
+         * There isn't any check here
+         * */
+        public void PlayStim(string name)
+        {
+            string command = "stim " + name;
+            port.WriteLine(command);
+
+            if (verbose)
+            {
+                deviceAnswer = port.ReadLine();
+                print(command + " -> " + deviceAnswer);
+            }
+        }
+
+        /**
+         * Low level call just meant for emitting velec <id> *selected 0
+         * There isn't any check here
+         * */
+        public void SetSelected0(int velecId)
+        {
+            string command = "velec " + velecId.ToString() + " *selected 0";
+            port.WriteLine(command);
+
+            if (verbose)
+            {
+                deviceAnswer = port.ReadLine();
+                print(command + " -> " + deviceAnswer);
+            }
+        }
+
+        /**
+         * submit velec definition directly.
+         * we assume stim values are okay. we don't perform any check here
+         * */
+        public void SubmitVelecDefDirectly (Stimulation stim)
+        {
+            string command = stim.GetStimCommand();
+            port.WriteLine(command);
+
+            if (verbose)
+            {
+                print(command);
+                deviceAnswer = port.ReadLine();
+                print("velec def -> " + deviceAnswer);
+            }
+
+        }
+        #endregion public direct API (no processing, just stim commands)
+
+        #region new public API
+        /**
+         * this is meant to play/resume an existing velec.
+         * we dont check if values were updated
+         * */
+        public void NewPlay(Stimulation stim)
+        {
+            if (stimulations.ContainsKey(stim.id) && !stimulations[stim.id].active)
+            {
+                stimulations[stim.id].active = true;
+                PlayStim(stimulations[stim.id].name);
+            }
+        }
+
+        public void NewStop(Stimulation stim)
+        {
+            if (stimulations.ContainsKey(stim.id))
+            {
+                stimulations[stim.id].active = false;
+            }
+
+            // get list of stims that are running along with the one that we want to stop
+            List<Stimulation> stimsToKeep = new List<Stimulation>();
+            foreach (var storedStim in stimulations.Values)
+            {
+                if (storedStim.active) stimsToKeep.Add(storedStim);
+            }
+
+            // stop all stims with global stim off
+            StopAll();
+
+            // resume stims that were running
+            foreach(var stimToResume in stimsToKeep)
+            {
+                // call new play or another method that just emit the stim <name> command
+            }
+        }
+        #endregion new public API
+
         // TODO: experimental feature. remove later
         // this is supposed to be called just once (probably on Awake or Start)
+        // TESTS: let's stick to the following: velec definitions always use selected=0 so we dont start them by mistake with "stim on"
         public void SubmitStim(Stimulation stim)
         {
             if (!stimulations.ContainsKey(stim.id))
             {
                 stimulations.Add(stim.id, stim); // set active as true in ctor
 
-                print(stim.GetStimCommand());
+                string stimCommand = stim.GetStimCommand();
+
+                print(stimCommand);
                 
-                port.WriteLine(stim.GetStimCommand()); // write velec config (submit stim to stimulator)
+                port.WriteLine(stimCommand); // write velec config (submit stim to stimulator)
+
+                if (verbose)
+                {
+                    deviceAnswer = port.ReadLine();
+                    print("velec def -> " + deviceAnswer);
+                }
 
                 // start stim. shouldn't do anything if selected was false.
                 // the previous is not true at all. even if the velec was defined as selected=0
@@ -309,7 +452,7 @@ namespace Inria.Tactility
 
         }
 
-        public void UpdateStim (Stimulation stim)
+        public void UpdateStim (Stimulation stim, bool updateSelected=false, bool newSelected=true)
         {
             if (stimulations.ContainsKey(stim.id))
             {
@@ -317,12 +460,20 @@ namespace Inria.Tactility
                 // range limits are going to be verified when creating string command
                 stimulations[stim.id].intensity = stim.intensity;
                 stimulations[stim.id].pulseWidth = stim.pulseWidth;
+                if (updateSelected) stimulations[stim.id].active = newSelected;
 
-                print(stimulations[stim.id].GetStimCommand()); // console
+                string command = stimulations[stim.id].GetStimCommand();
 
-                port.WriteLine(stimulations[stim.id].GetStimCommand()); // write velec new config
+                print(command); // console
+
+                port.WriteLine(command); // write velec new config
                 // do we need to write "stim <stimName>" again?. Let's do it just in case
                 // port.WriteLine("stim " + stimulations[stim.id].name);    // start stim (if active is false, maybe it wont play)
+                if (verbose)
+                {
+                    deviceAnswer = port.ReadLine();
+                    print("velec redef -> " + deviceAnswer);
+                }
 
             } else
             {
@@ -451,31 +602,33 @@ namespace Inria.Tactility
 
         // it will update selected to 1.
         // command: stim <stimName> need to be sent previously
-        public void PlayStim(int id)
+        // it shouldnt do anything else but setting selected to 1
+        public void EnableStim(int id)
         {
             SetStimOnOff(id, true);
         }
 
-        public void StopStim(int id)
+        public void PlayStim(int id)
+        {
+            if (stimulations.ContainsKey(id))
+            {
+                string command = "stim " + stimulations[id].name;
+                port.WriteLine(command);
+
+                if (verbose)
+                {
+                    deviceAnswer = port.ReadLine();
+                    print(command + " -> " + deviceAnswer);
+                }
+            }
+
+        }
+
+        public void DisableStim(int id)
         {
             SetStimOnOff(id, false);
         }
 
-        public void StartAll()
-        {
-            port.WriteLine("stim on"); // should start all stim with selected=1
-        }
-
-        public void StopAll()
-        {
-            port.WriteLine("stim off");
-        }
-
-        public void SetFrequency (int val)
-        {
-            frequency = val;
-            port.WriteLine("freq " + val);
-        }
         #endregion public API
 
         #region private methods
@@ -507,25 +660,69 @@ namespace Inria.Tactility
             // port.WriteLine("freq " + initialFrequency);
             SetFrequency(initialFrequency);
 
-            port.WriteLine("stim on");
+            // query all virtual electrodes status
+            // port.WriteLine("velect ")
+
+            // deactive all previous virtual electrodes
+            DeactiveAllVE();
+
+            // port.WriteLine("stim on");
+            // if (verbose)
+            // {
+            //     deviceAnswer = port.ReadLine();
+            //     print("stim on -> " + deviceAnswer);
+            // }
 
             // if there was any exeption before (while writing to the port, we wont get to this point)
             initialized = true; 
         }
 
+        private void DeactiveAllVE ()
+        {
+            string command;
+            for (int i = 1; i <= 16; ++i)
+            {
+                command = "velec " + i.ToString() + " *selected 0";
+                port.WriteLine(command);
+
+                if (verbose)
+                {
+                    deviceAnswer = port.ReadLine();
+                    print(command + " -> " + deviceAnswer);
+                }
+
+            }
+
+        }
+
+        /**
+         * set velec id *select [0|1]
+         * if set to zero, stops stim this was being played
+         * */
         private void SetStimOnOff (int id, bool value)
         {
             if (stimulations.ContainsKey(id))
             {
                 stimulations[id].active = value;
                 string valueStr = (value) ? "1" : "0";
-                port.WriteLine("velec " + id.ToString() + " *selected " + valueStr);
-                print("velec " + id.ToString() + " *selected " + valueStr);
+                string commandStr = "velec " + id.ToString() + " *selected " + valueStr;
+                port.WriteLine(commandStr);
+                if (verbose)
+                { 
+                    deviceAnswer = port.ReadLine();
+                    print(commandStr + " -> " + deviceAnswer);
+
+                    // // query velec status
+                    // string queryCommand = "velec " + id.ToString() + " selected ?";
+                    // deviceAnswer = port.ReadLine();
+                    // print(queryCommand + " -> " + deviceAnswer);
+                }
             } else {
                 throw new Exception("No available stim with id=" + id);
             }
 
         }
+
         #endregion private methods
     }
 

@@ -10,7 +10,7 @@ namespace Inria.Tactility
         [Header("Settings")]
 
         [SerializeField]
-        private LayerMask reactoTo;
+        private LayerMask reactoTo = default;
 
         [SerializeField]
         private UnityEvent onCollisionEnter = default;

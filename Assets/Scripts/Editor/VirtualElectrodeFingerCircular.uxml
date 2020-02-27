@@ -1,0 +1,24 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement name="title">
+        <Style src="VirtualElectrodeFingerCircular.uss" />
+    </ui:VisualElement>
+    <ui:VisualElement name="layout">
+        <Style src="VirtualElectrodeFingerCircular.uss" />
+        <ui:VisualElement class="row">
+            <uie:EnumField label="P1" value="Center" name="M1" />
+            <uie:EnumField label="P8" value="Center" name="M8" />
+        </ui:VisualElement>
+        <ui:VisualElement class="row">
+            <uie:EnumField label="P2" value="Center" name="M2" />
+            <uie:EnumField label="P7" value="Center" name="M7" />
+        </ui:VisualElement>
+        <ui:VisualElement class="row">
+            <uie:EnumField label="P3" value="Center" name="M3" />
+            <uie:EnumField label="P6" value="Center" name="M6" />
+        </ui:VisualElement>
+        <ui:VisualElement class="row">
+            <uie:EnumField label="P4" value="Center" name="M4" />
+            <uie:EnumField label="P5" value="Center" name="M5" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

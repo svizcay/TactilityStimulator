@@ -127,7 +127,8 @@ namespace Inria.Tactility
                 for (int i = 0; i < poke.virtualElectrodes.Length; ++i)
                 {
                     // stimManager.Remove(poke.virtualElectrodes[i].id); // Remove deprecated. use StopStim now
-                    stimManager.StopStim(poke.virtualElectrodes[i].id);
+                    // stimManager.StopStim(poke.virtualElectrodes[i].id); // stopstim renamed to disable stim that sets its selected to 0
+                    stimManager.DisableStim(poke.virtualElectrodes[i].id);
                 }
 
             }
