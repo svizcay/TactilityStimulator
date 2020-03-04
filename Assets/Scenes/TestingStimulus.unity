@@ -367,38 +367,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 1200010714}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 346004f581453004fb08a0b072cbc38f, type: 3}
+  m_Script: {fileID: 11500000, guid: 6eaff9d4012734947b0d09655693aa9d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  newSelectedValue: 0
-  virtualElectrode: {fileID: 11400000, guid: 65792d24dce06f9448dc2675b0d8cc08, type: 2}
-  stimSelected: 1
-  intensity: 3
-  pulseWidth: 300
+  intensity: 2.5
+  pulseWidth: 200
   frequency: 35
-  currentCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  pulseWidthCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  keyPressType: 0
-  emitStimStartByNameKeyCode: 112
-  emitStimEndKeyCode: 48
-  toggleStimSelectedKeyCode: 306
-  globalStimOnKeyCode: 55
-  globalStimOffKeyCode: 56
-  increaseIntensityKeyCode: 275
-  decreaseIntensityKeyCode: 276
-  increasePulseWidthKeyCode: 108
-  decreasePulseWidthKeyCode: 106
-  increaseFrequencyKeyCode: 273
-  decreaseFrequencyKeyCode: 274
-  initialized: 0
+  pattern: {fileID: 11400000, guid: f55f5425ed01cd548889b6aceda51889, type: 2}
+  useISI: 0
+  useISIAfterLastStep: 0
+  stepDuty: 1
+  _patternFrequency: 8
+  startStopKeyCode: 112
+  ready: 0
   running: 0
+  stepDuration: 0
+  interStepIntervalDuration: 0

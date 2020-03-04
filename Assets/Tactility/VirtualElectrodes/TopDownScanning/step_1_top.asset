@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9af68be3d99d4cf4ba19e4e3f45b0672, type: 3}
+  m_Name: step_1_top
+  m_EditorClassIdentifier: 
+  virtualElectrodes:
+  - {fileID: 11400000, guid: bdc82bf581f9bca4c84bb24fc25cc337, type: 2}
