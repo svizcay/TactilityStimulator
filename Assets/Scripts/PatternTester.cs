@@ -30,7 +30,12 @@ namespace Inria.Tactility.Debugging
         [SerializeField]
         [Range(1, 200)]
         [Tooltip("frequency value to submit in key pressed")]
+        [Leap.Unity.Attributes.OnEditorChange("SubmitFrequency")]
         private int frequency = 35; // between 1 and 200hz
+
+        [SerializeField]
+        [Tooltip("")]
+        private Actions.HandPart handPart = Actions.HandPart.Index;
 
         [Header("Pattern Settings")]
 
@@ -76,31 +81,52 @@ namespace Inria.Tactility.Debugging
             set {
                 // we need to update step duration and inter step interval accordingly
                 print("setting pattern frequency to: " + value);
-                // simplest case: No Inter Step Interval
-                if (!useISI)
-                {
-                    // divide pattern period in equal parts for each step
-                    int nrSteps = pattern.steps.Length;
-                    float patternDurationMS = 1000.0f / value;   // 'value' is the intended frequency
 
-                    stepDuration = patternDurationMS / nrSteps; // this to be valid, should be in the order of milliseconds and higher than system period
+                float patternDurationMS = 1000f / value;
 
-                    // now we should check the speed of the stimulator
-                    // keep it out for the moment
-                    // int systemFreq = stimManager.GetFrequency();
-                    // float systemPeriodMS = 1000.0f / systemFreq;
-
-                } else
+                if (useISI)
                 {
                     if (useISIAfterLastStep)
                     {
-
+                        // make sure to include case when pattern consists of a single step (DONE: works!)
+                        durations = new float[pattern.steps.Length * 2];
+                        float stepsDuration = patternDurationMS * stepDuty;
+                        float isisDuration = patternDurationMS - stepsDuration;
+                        stepDuration = stepsDuration / pattern.steps.Length;
+                        interStepIntervalDuration = isisDuration / pattern.steps.Length;
+                        for (int i = 0; i < durations.Length; ++i)
+                        {
+                            if (i % 2 == 0) durations[i] = stepDuration;
+                            else durations[i] = interStepIntervalDuration;
+                        }
                     }
+                    else
+                    {
+                        // if pattern consists of only a single step and we didn't enable a last inter step interval, throw error.
+                        if (pattern.steps.Length == 1) throw new Exception("Pattern only consists of a single step and last ISI was not enabled.");
+                        durations = new float[pattern.steps.Length * 2 - 1];
+                        float stepsDuration = patternDurationMS * stepDuty;
+                        float isisDuration = patternDurationMS - stepsDuration;
+                        stepDuration = stepsDuration / pattern.steps.Length;
+                        interStepIntervalDuration = isisDuration / (pattern.steps.Length - 1);    // error when pattern has only one step
 
+                        for (int i = 0; i < durations.Length; ++i)
+                        {
+                            if (i % 2 == 0) durations[i] = stepDuration;
+                            else durations[i] = interStepIntervalDuration;
+                        }
+                    }
+                } else
+                {
+                    durations = new float[pattern.steps.Length];
+                    // each element in the array has the same duration
+                    stepDuration = patternDurationMS / durations.Length;
+                    for (int i = 0; i < durations.Length; ++i)
+                    {
+                        durations[i] = stepDuration;
+                    }
                 }
-                _patternFrequency = value;
             }
-
         }
 
         [Header("Settings - Key bindings")]
@@ -134,22 +160,41 @@ namespace Inria.Tactility.Debugging
         private TactilityStimulatorManager stimManager;
 
         // internal data
-        private Stimulation currentStim;
+        // private Stimulation currentStim;
         // hardcoded values used for the test velec
-        private const int id = 11;    // velec id to use for testing
-        private new const string name = "test";
+        // private const int id = 11;    // velec id to use for testing
+        // private new const string name = "test";
 
         // pattern iteration related vars
         private float[] durations;
-        private float elapsedTimePlaying = 0f;
-        private int patternIndexIterator = 0; // also used for playing ISIs when index is odd (and when using ISI of course)
 
-        private bool patternsParamsDirty = true; // to indicate us that we need to calculate again stepDuration
+
+        [SerializeField]
+        [SouthernForge.Utils.ReadOnly]
+        private float elapsedTimePlayingMS = 0f;
+
+        private int patternIndexIterator = 0; // also used for playing ISIs when index is odd (and when using ISI of course)
+        private int totalNrOfRealSteps; // counting both, steps ans ISIs    // this should be updated accordingly whenever the options change
+
+        // private bool patternsParamsDirty = true; // to indicate us that we need to calculate again stepDuration
+
+        private Stimulation[] stimulations;
 
         private void Awake()
         {
             stimManager = FindObjectOfType<TactilityStimulatorManager>();
-            CalculateDurations();
+
+            // calculate stepDuration and isiDuration
+            PatternFrequency = _patternFrequency;
+
+            if (useISI)
+            {
+                totalNrOfRealSteps = (useISIAfterLastStep) ? (pattern.steps.Length * 2) : (pattern.steps.Length * 2 - 1);
+            }
+            else
+            {
+                totalNrOfRealSteps = pattern.steps.Length;
+            }
         }
 
         private void Start()
@@ -168,13 +213,30 @@ namespace Inria.Tactility.Debugging
 
                 if (running)
                 {
-                    elapsedTimePlaying += Time.deltaTime;
-                    if (elapsedTimePlaying > durations[patternIndexIterator])
+                    elapsedTimePlayingMS += (Time.deltaTime * 1000);
+                    if (elapsedTimePlayingMS > durations[patternIndexIterator])
                     {
                         // time to move along the pattern pieces (either a step or a ISI)
-                        
-                        // patternIndexIterator
+                        int nextIndexIterator = (patternIndexIterator + 1) % totalNrOfRealSteps;
 
+                        int stepNr = GetStepNR(patternIndexIterator);   // if -1 we were playing a ISI, if not, we were playing a stim
+                        if (stepNr != -1)
+                        {
+                            // we we were playing a real step, stop it (set it to selected=0)
+                            stimManager.SetSelected0(stimulations[stepNr].ID);
+                        }
+
+
+                        // if the next step is actually a step, play it
+                        int nextStepNr = GetStepNR(nextIndexIterator);
+                        if (nextStepNr != -1)
+                        {
+                            stimManager.SubmitVelecDefDirectly(stimulations[nextStepNr]);
+                            stimManager.StartAll();
+                        }
+
+                        patternIndexIterator = nextIndexIterator;
+                        elapsedTimePlayingMS = 0; // time playing a real step (either step or ISIs)
                     }
 
                     // if (elapsedTimePlaying > stepDuration)
@@ -190,37 +252,75 @@ namespace Inria.Tactility.Debugging
                 yield return null;
             }
 
-            // create stim
-            uint anode = 16384;
-            currentStim = new Stimulation(id, name, intensity, pulseWidth, new int[] { 10 }, anode, true);
+            // create stimulations
+            stimulations = new Stimulation[pattern.steps.Length];
+            for (int i = 0; i < stimulations.Length; ++i)
+            {
+                // will throw an exception if there is not electrode connect for that part of the hand
+                int connector = stimManager.GetValidConnector(handPart);    
+                stimulations[i] = new Stimulation(
+                    pattern.steps[i].virtualElectrodes[0].id,   // NOTE: by now only accessing the first electrode of each step (add later electrode for additional fingers)
+                    pattern.steps[i].virtualElectrodes[0].name,
+                    intensity,
+                    pulseWidth,
+                    pattern.steps[i].virtualElectrodes[0].GetCathodes(connector),
+                    pattern.steps[i].virtualElectrodes[0].GetAnodes(connector),
+                    true
+                );
+            }
 
-            // submit velec definition to stimManager
-            // stimManager.SubmitStim(currentStim);
+            SubmitFrequency();
 
             ready = true;
         }
 
         public void ToggleRunning ()
         {
+            print("toggle running");
             if (running) {
-                // stop
-                stimManager.SetSelected0(currentStim.ID);
-                elapsedTimePlaying = 0;
+                // stop current stim playing
+                int stepNr = GetStepNR(patternIndexIterator);
+                if (stepNr != -1)
+                {
+                    // stop current stim
+                    stimManager.SetSelected0(stimulations[stepNr].ID);
+                }
             } else
             {
-                // play (from the beginning)
-                // stimManager.SubmitVelecDefDirectly(currentStim); // velec def
-                if (pattern != null && pattern.steps.Length > 0)
+                // at this point any velec should have selected=0, so we need to submit a redefinition of the right one with selected=1
+
+                // get what's the real step to play (what happens when we are in the InterPulseInterval and we resume)?
+                int stepNr = GetStepNR(patternIndexIterator);
+
+                if (stepNr != -1)
                 {
-                    SubmitStep(0);
+                    // play step
+                    stimManager.SubmitVelecDefDirectly(stimulations[stepNr]);
+                    stimManager.StartAll();
                 }
             }
             running = !running;
         }
 
+        private int GetStepNR(int patternIndexIter)
+        {
+            int stepNr = -1; // negative if we were executing a "pause' inter step interval
+            if (useISI)
+            {
+                // we don't care here if there was also a isi padded at the end
+                if (patternIndexIter % 2 == 1) stepNr = -1; // we were in a ISI
+                else stepNr = patternIndexIter / 2;
+            } else
+            {
+                stepNr = patternIndexIter;
+            }
+
+            return stepNr;
+        }
+
         public void SubmitFrequency ()
         {
-            stimManager.SetFrequency(frequency);
+            if (stimManager != null) stimManager.SetFrequency(frequency);
         }
 
         // to keep ready private (only accessed by custom editor)
@@ -241,55 +341,6 @@ namespace Inria.Tactility.Debugging
         private void SubmitStep (int stepIndex)
         {
 
-        }
-
-        // to execute every time the frequency changes or some option that modifies ISI
-        private void CalculateDurations ()
-        {
-            float patternDurationMS = 1000f / _patternFrequency;
-
-            if (useISI)
-            {
-                if (useISIAfterLastStep)
-                {
-                    // make sure to include case when pattern consists of a single step (DONE: works!)
-                    durations = new float[pattern.steps.Length * 2];
-                    float stepsDuration = patternDurationMS * stepDuty;
-                    float isisDuration = patternDurationMS - stepsDuration;
-                    float singleStepDuration = stepsDuration / pattern.steps.Length;
-                    float singleISIDuration = isisDuration / pattern.steps.Length;
-                    for (int i = 0; i < durations.Length; ++i)
-                    {
-                        if (i % 2 == 0) durations[i] = singleStepDuration;
-                        else durations[i] = singleISIDuration;
-                    }
-                }
-                else
-                {
-                    // if pattern consists of only a single step and we didn't enable a last inter step interval, throw error.
-                    if (pattern.steps.Length == 1) throw new Exception("Pattern only consists of a single step and last ISI was not enabled.");
-                    durations = new float[pattern.steps.Length * 2 - 1];
-                    float stepsDuration = patternDurationMS * stepDuty;
-                    float isisDuration = patternDurationMS - stepsDuration;
-                    float singleStepDuration = stepsDuration / pattern.steps.Length;
-                    float singleISIDuration = isisDuration / (pattern.steps.Length - 1);    // error when pattern has only one step
-
-                    for (int i = 0; i < durations.Length; ++i)
-                    {
-                        if (i % 2 == 0) durations[i] = singleStepDuration;
-                        else durations[i] = singleISIDuration;
-                    }
-                }
-            } else
-            {
-                durations = new float[pattern.steps.Length];
-                // each element in the array has the same duration
-                float individualDuration = patternDurationMS / durations.Length;
-                for (int i = 0; i < durations.Length; ++i)
-                {
-                    durations[i] = individualDuration;
-                }
-            }
         }
     }
 

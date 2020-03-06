@@ -326,7 +326,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b862fb3d5a26ba44a5a988ad62a52ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  verbose: 1
+  verbose: 0
   initialFrequency: 35
   portName: COM5
   readTimeout: 2000
@@ -370,16 +370,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6eaff9d4012734947b0d09655693aa9d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  intensity: 2.5
+  intensity: 2
   pulseWidth: 200
-  frequency: 35
+  frequency: 200
+  handPart: 0
   pattern: {fileID: 11400000, guid: f55f5425ed01cd548889b6aceda51889, type: 2}
   useISI: 0
   useISIAfterLastStep: 0
   stepDuty: 1
-  _patternFrequency: 8
+  _patternFrequency: 0.1
   startStopKeyCode: 112
   ready: 0
   running: 0
-  stepDuration: 0
+  stepDuration: 2500
   interStepIntervalDuration: 0
+  elapsedTimePlayingMS: 0

@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 587284084f94fdb428dde22944de8483, type: 3}
   m_Name: 3_index_bottom
   m_EditorClassIdentifier: 
-  id: 10
-  name: virtualElectrode
-  electrodes: 0000000000000000000000000000000000000000010000000200000001000000
+  id: 13
+  name: index_bottom
+  electrodes: 0000000000000000000000000000000000000000010000000200000000000000

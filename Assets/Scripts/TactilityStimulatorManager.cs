@@ -126,7 +126,13 @@ namespace Inria.Tactility
         // the id is the velec id. this is the value used to stop a stim and whenever a velec definition is submited, we check map it to a velec id
         private Dictionary<int, Stimulation> stimulations = new Dictionary<int, Stimulation>();
 
+        private string commandToSubmit; // to avoid memory allocations?
         private string deviceAnswer;
+
+        // logging commands (to be dummped into a log file)
+        // all sessions should be log but let's add a conditional in case it's taking too long to dump file
+        private const string logFile = "stimulatorCommand.log";
+        private List<string> log = new List<string>();
 
         #region unity events
         private void OnEnable()
@@ -138,18 +144,26 @@ namespace Inria.Tactility
             {
                 port.Open();
                 if (verbose) print("[" + this.GetType().Name + "] Connected to bluetooth device");
+                InitStimulator();
             } catch (Exception e)
             {
                 UnityEngine.Debug.LogError("Error trying to open port " + portName + ": " + e.Message);
             }
 
-            InitStimulator();
         }
 
         private void OnDisable()
         {
-            port.WriteLine("stim off");
-            port.Close();
+            if (initialized)
+            {
+                commandToSubmit = "stim off";
+                log.Add(commandToSubmit);
+                port.WriteLine(commandToSubmit);
+                port.Close();
+
+                // dump log file
+                DumpLogFile();
+            }
         }
 
         #endregion unity events
@@ -259,7 +273,7 @@ namespace Inria.Tactility
 
             if (stimulations.ContainsKey(velecId))
             {
-                stimulations[velecId].Selected = true;
+                stimulations[velecId].Selected = false;
             }
 
             // check if there is another stim running
@@ -299,6 +313,51 @@ namespace Inria.Tactility
 
         }
         #endregion public direct API (no processing, just stim commands)
+
+        /**
+         * return -1 if it failed finding a valid conencted electrode for such part of the hand
+         * */
+        public int GetValidConnector (Actions.HandPart handPart)
+        {
+            int validConnector = -1;
+            if (handPart == Actions.HandPart.Palm)
+            {
+                // try to find if there is an electrode targeting the palm (electrodes connected in connector 1 or 2)
+                bool connector1IsValid = (connector1 != Connector1ElectrodeType.None) && (connector1HandPart == Connector1HandPart.Palm);
+                bool connector2IsValid = (connector2 != Connector2ElectrodeType.None) && (connector2HandPart == Connector2HandPart.Palm);
+
+                if (!(connector1IsValid || connector2IsValid)) throw new Exception("No electrode connected to stimulate " + handPart);
+
+                validConnector = (connector1IsValid) ? 1 : 2;
+            } else if (handPart == Actions.HandPart.Dorsal)
+            {
+                bool connector1IsValid = (connector1 != Connector1ElectrodeType.None) && (connector1HandPart == Connector1HandPart.Dorsal);
+                bool connector2IsValid = (connector2 != Connector2ElectrodeType.None) && (connector2HandPart == Connector2HandPart.Dorsal);
+
+                if (!(connector1IsValid || connector2IsValid)) throw new Exception("No electrode connected to stimulate " + handPart);
+
+                validConnector = (connector1IsValid) ? 1 : 2;
+            } else if (handPart == Actions.HandPart.Index)
+            {
+                bool connector3IsValid = (connector3 != Connector3ElectrodeType.None) && (connector3HandPart == Connector3HandPart.Index);
+                bool connector4IsValid = (connector4 != Connector4ElectrodeType.None) && (connector4HandPart == Connector4HandPart.Index);
+
+                if (!(connector3IsValid || connector4IsValid)) throw new Exception("No electrode connected to stimulate " + handPart);
+
+                validConnector = (connector3IsValid) ? 3 : 4;
+            } else if (handPart == Actions.HandPart.Thumb)
+            {
+                bool connector3IsValid = (connector3 != Connector3ElectrodeType.None) && (connector3HandPart == Connector3HandPart.Thumb);
+                bool connector4IsValid = (connector4 != Connector4ElectrodeType.None) && (connector4HandPart == Connector4HandPart.Thumb);
+
+                if (!(connector3IsValid || connector4IsValid)) throw new Exception("No electrode connected to stimulate " + handPart);
+
+                validConnector = (connector3IsValid) ? 3 : 4;
+            }
+
+            return validConnector;
+
+        }
 
         #region experimental API for PatternTester
         /**
@@ -559,6 +618,9 @@ namespace Inria.Tactility
         #endregion public API
 
         #region private methods
+        /**
+         * should be only called if the connection to the stim port was successful
+         * */
         void InitStimulator ()
         {
             port.WriteLine("iam TACTILITY");
@@ -602,6 +664,12 @@ namespace Inria.Tactility
 
             // if there was any exeption before (while writing to the port, we wont get to this point)
             initialized = true; 
+        }
+
+        private void DumpLogFile ()
+        {
+
+
         }
 
         private void DeactiveAllVE ()
