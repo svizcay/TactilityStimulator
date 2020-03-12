@@ -62,6 +62,9 @@ namespace Inria.Tactility
         [SerializeField]
         [Tooltip("time out in ms to try to read back from bluetooth device")]
         private int readTimeout = 1000; // 1 sec
+
+        [SerializeField]
+        private System.IO.Ports.Handshake handshake = Handshake.None;
         #endregion port settings
 
         #region connectors
@@ -139,6 +142,7 @@ namespace Inria.Tactility
         private const int portDataBits = 8;
         private const Parity portParity = Parity.None;
         private const StopBits portStopBits = StopBits.One;
+
         #endregion por constant values
 
         private SerialPort port;
@@ -160,7 +164,7 @@ namespace Inria.Tactility
         {
             port = new SerialPort(portName, portBaudRate, portParity, portDataBits, portStopBits);
             port.ReadTimeout = readTimeout;//maybe needs to be set before opening port
-
+            port.Handshake = handshake;
             try
             {
                 port.Open();
@@ -597,12 +601,12 @@ namespace Inria.Tactility
             App2StimCmd startCmd = new App2StimCmd("iam TACTILITY");
             port.WriteLine(startCmd.cmd);
 
-            if (verbose)
-            {
-                deviceAnswer = port.ReadLine();
-                print(deviceAnswer);
+            // if (verbose)
+            // {
+                deviceAnswer = port.ReadLine(); // required otherwise the next answers are a big mess
+                // print(deviceAnswer);
                 startCmd.response = deviceAnswer;
-            }
+            // }
             log.Add(startCmd);
 
             // query device

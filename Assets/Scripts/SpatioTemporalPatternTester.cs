@@ -11,9 +11,9 @@ using UnityEditor;
 namespace Inria.Tactility.Debugging
 {
     /**
-     * Utility to test modulation of different patterns
+     * Utility to test spatio temportal pattern at different speed
      * */
-    public class PatternTester : MonoBehaviour
+    public class SpatioTemporalPatternTester : MonoBehaviour
     {
         [Header("Settings")]
 
@@ -43,6 +43,11 @@ namespace Inria.Tactility.Debugging
         [Tooltip("pattern to test different modulation values")]
         private StimPattern pattern; // by now it only contains spatial layout (not any temporal value)
         
+        /**
+         * seems there is no need to use inter step interval.
+         * if we can already perceive a delay when using "stim on" to start a stim.
+         * check if that is still the case while keeping the stimulator always "on"
+         * */
         [SerializeField]
         [Tooltip("wether or not to use Inter Step Interval")]
         private bool useISI = false;    // hide unnecesary options if this was set to false // this should also work for patterns with a single step
@@ -57,6 +62,9 @@ namespace Inria.Tactility.Debugging
         // [Tooltip("Inter Step Interval time in milliseconds")]
         // private float ISIMS = 1000f;
 
+        /**
+         * this is a mechanism to specify inter step interval duration in ms, without saying explicitly how long
+         * */
         [SerializeField]
         [Tooltip("Step duty (if using Inter Step Interval ISI")]
         private float stepDuty = 1f;
@@ -180,6 +188,10 @@ namespace Inria.Tactility.Debugging
 
         private Stimulation[] stimulations;
 
+        public float stimOnDelayMS = 25;
+        private bool shouldSubmitStimOn = false;
+        private float elapsedTimeForStimOn = 0f;
+
         private void Awake()
         {
             stimManager = FindObjectOfType<TactilityStimulatorManager>();
@@ -213,7 +225,19 @@ namespace Inria.Tactility.Debugging
 
                 if (running)
                 {
+                    if (shouldSubmitStimOn)
+                    {
+                        elapsedTimeForStimOn += (Time.deltaTime * 1000);
+                        if (elapsedTimeForStimOn > stimOnDelayMS)
+                        {
+                            stimManager.StartAll();
+                            shouldSubmitStimOn = false;
+                        }
+                    }
+
                     elapsedTimePlayingMS += (Time.deltaTime * 1000);
+
+
                     if (elapsedTimePlayingMS > durations[patternIndexIterator])
                     {
                         // time to move along the pattern pieces (either a step or a ISI)
@@ -232,7 +256,11 @@ namespace Inria.Tactility.Debugging
                         if (nextStepNr != -1)
                         {
                             stimManager.SubmitVelecDefDirectly(stimulations[nextStepNr]);
-                            stimManager.StartAll();
+
+                            // try to not submit the "stim on" right after a velec def. might require longer to process it
+                            // stimManager.StartAll();
+                            shouldSubmitStimOn = true;
+
                         }
 
                         patternIndexIterator = nextIndexIterator;
@@ -296,7 +324,11 @@ namespace Inria.Tactility.Debugging
                 {
                     // play step
                     stimManager.SubmitVelecDefDirectly(stimulations[stepNr]);
-                    stimManager.StartAll();
+
+                    // try to not submit "stim on" immediately
+                    // stimManager.StartAll();
+                    shouldSubmitStimOn = true;
+                    elapsedTimeForStimOn = 0;
                 }
             }
             running = !running;
@@ -345,7 +377,7 @@ namespace Inria.Tactility.Debugging
     }
 
 #if UNITY_EDITOR
-    [CustomEditor(typeof(PatternTester))]
+    [CustomEditor(typeof(SpatioTemporalPatternTester))]
     public class PatternTesterEditor : Editor
     {
 
@@ -353,7 +385,7 @@ namespace Inria.Tactility.Debugging
         {
             base.OnInspectorGUI();
 
-            PatternTester script = target as PatternTester;
+            SpatioTemporalPatternTester script = target as SpatioTemporalPatternTester;
 
             if (!script.IsReady()) return;
 

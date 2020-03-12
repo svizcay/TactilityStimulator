@@ -321,7 +321,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1200010714}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7b862fb3d5a26ba44a5a988ad62a52ec, type: 3}
   m_Name: 
@@ -330,6 +330,7 @@ MonoBehaviour:
   initialFrequency: 35
   portName: COM5
   readTimeout: 2000
+  handshake: 0
   connector1: 0
   connector2: 0
   connector3: 0
@@ -365,23 +366,22 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1200010714}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6eaff9d4012734947b0d09655693aa9d, type: 3}
+  m_Script: {fileID: 11500000, guid: 054c820056de6d7499f1a4d9f161817e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  intensity: 2
+  intensity: 3
   pulseWidth: 200
   frequency: 200
   handPart: 0
-  pattern: {fileID: 11400000, guid: f55f5425ed01cd548889b6aceda51889, type: 2}
-  useISI: 0
-  useISIAfterLastStep: 0
-  stepDuty: 1
-  _patternFrequency: 0.3
+  velec: {fileID: 11400000, guid: bdc82bf581f9bca4c84bb24fc25cc337, type: 2}
+  cycleDuty: 1
+  _speed: 1
   startStopKeyCode: 112
   ready: 0
   running: 0
-  stepDuration: 833.3333
-  interStepIntervalDuration: 0
-  elapsedTimePlayingMS: 0
+  velecOnTimeIntervalMS: 1000
+  velecOffTimeIntervalMS: 0
+  elapsedTimeMS: 0
+  stimIsON: 0
