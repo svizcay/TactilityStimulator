@@ -121,63 +121,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &430760069
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 430760071}
-  - component: {fileID: 430760070}
-  m_Layer: 0
-  m_Name: SpatioTemporalTester
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &430760070
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 430760069}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15f42ca29c19067498c02d55dee41e9e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  intensity: 2
-  pulseWidth: 200
-  frequency: 200
-  handPart: 0
-  pattern: {fileID: 11400000, guid: f55f5425ed01cd548889b6aceda51889, type: 2}
-  _patternFrequency: 0.5
-  delayVelecTurnOff: 0
-  turnOffDelayMS: 50
-  startStopKeyCode: 112
-  ready: 0
-  running: 0
-  stepDuration: 500
-  elapsedTimePlayingMS: 0
-  patternIndexIterator: 0
---- !u!4 &430760071
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 430760069}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 4
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -353,7 +296,7 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1804314618
+--- !u!1 &1200010714
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -361,57 +304,54 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1804314621}
-  - component: {fileID: 1804314620}
-  - component: {fileID: 1804314619}
+  - component: {fileID: 1200010716}
+  - component: {fileID: 1200010715}
+  - component: {fileID: 1200010717}
   m_Layer: 0
-  m_Name: EventSystem
+  m_Name: StimulatorManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1804314619
+--- !u!114 &1200010715
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1804314618}
+  m_GameObject: {fileID: 1200010714}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4f231c4fb786f3946a6b90b886c48677, type: 3}
+  m_Script: {fileID: 11500000, guid: 7b862fb3d5a26ba44a5a988ad62a52ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_HorizontalAxis: Horizontal
-  m_VerticalAxis: Vertical
-  m_SubmitButton: Submit
-  m_CancelButton: Cancel
-  m_InputActionsPerSecond: 10
-  m_RepeatDelay: 0.5
-  m_ForceModuleActive: 0
---- !u!114 &1804314620
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1804314618}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_FirstSelected: {fileID: 0}
-  m_sendNavigationEvents: 1
-  m_DragThreshold: 10
---- !u!4 &1804314621
+  verbose: 0
+  initialFrequency: 35
+  portName: COM5
+  readTimeout: 2000
+  handshake: 0
+  connector1: 0
+  connector2: 0
+  connector3: 0
+  connector4: 2
+  connector1HandPart: 0
+  connector2HandPart: 0
+  connector3HandPart: 0
+  connector4HandPart: 1
+  initialized: 0
+  running: 0
+  frequency: 0
+  batteryLevel: 
+  hardware: 
+  firmware: 
+--- !u!4 &1200010716
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1804314618}
+  m_GameObject: {fileID: 1200010714}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -419,72 +359,53 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1001 &1722850476303987202
-PrefabInstance:
+--- !u!114 &1200010717
+MonoBehaviour:
   m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1722850475735239190, guid: 11eb34e12f81e564b95fb82c3e80fbee,
-        type: 3}
-      propertyPath: m_Name
-      value: Stimulator
-      objectReference: {fileID: 0}
-    - target: {fileID: 1722850475735239191, guid: 11eb34e12f81e564b95fb82c3e80fbee,
-        type: 3}
-      propertyPath: m_LocalPosition.x
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1200010714}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b66db224a32c46944a722c5d12c342b5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  intensity: 2.5
+  pulseWidth: 200
+  modulation:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1722850475735239191, guid: 11eb34e12f81e564b95fb82c3e80fbee,
-        type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1722850475735239191, guid: 11eb34e12f81e564b95fb82c3e80fbee,
-        type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1722850475735239191, guid: 11eb34e12f81e564b95fb82c3e80fbee,
-        type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1722850475735239191, guid: 11eb34e12f81e564b95fb82c3e80fbee,
-        type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1722850475735239191, guid: 11eb34e12f81e564b95fb82c3e80fbee,
-        type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1722850475735239191, guid: 11eb34e12f81e564b95fb82c3e80fbee,
-        type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1722850475735239191, guid: 11eb34e12f81e564b95fb82c3e80fbee,
-        type: 3}
-      propertyPath: m_RootOrder
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 1722850475735239191, guid: 11eb34e12f81e564b95fb82c3e80fbee,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1722850475735239191, guid: 11eb34e12f81e564b95fb82c3e80fbee,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1722850475735239191, guid: 11eb34e12f81e564b95fb82c3e80fbee,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 11eb34e12f81e564b95fb82c3e80fbee, type: 3}
+      inSlope: 1.0005876
+      outSlope: 1.0005876
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.99975586
+      value: 1.0003433
+      inSlope: 1.0005876
+      outSlope: 1.0005876
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  modulatedValue: 0
+  minFrequency: 35
+  maxFrequency: 200
+  handPart: 0
+  velec: {fileID: 11400000, guid: ba7f6fb9ceec68240bd78587ba135c84, type: 2}
+  _speed: 5
+  startStopKeyCode: 112
+  ready: 0
+  running: 0
+  interdefIntervalMS: 0
+  elapsedTimeMS: 0
+  modulationCurveTimeLength: 0

@@ -4,6 +4,8 @@ using UnityEngine;
 using System.IO.Ports;
 using System;
 using System.IO;
+using System.Text;
+using UnityEngine.Events;
 
 namespace Inria.Tactility
 {
@@ -21,21 +23,50 @@ namespace Inria.Tactility
 
     public class App2StimCmd
     {
+        public int id;
+        public int frameId;
+        public float timestamp; // in seconds
+        public float deltaTimeLastCommand;  // milliseconds
+        public float commandSubmissionTime; // millisecods
         public string cmd;
         public string response = "" ;
-        public int frameId;
-        public float timestamp;
+
+        private static int counter = 0;
+        private static float previousRealTimeLastCommand = 0f;
 
         public App2StimCmd(string cmd)
         {
-            this.cmd = cmd;
+            this.id = counter++;
+            this.cmd = "[" + this.id + "] " + cmd;
             this.frameId = Time.frameCount;
             this.timestamp = Time.realtimeSinceStartup;
+            this.deltaTimeLastCommand = (this.timestamp - previousRealTimeLastCommand) * 1000f;
+
+            // response and commandSubmissionTime are filled later after actually sending command
+
+            // update static vars
+            if (counter == 256) counter = 0;
+            previousRealTimeLastCommand = this.timestamp;
+        }
+
+        public void RecordSubmissionTime ()
+        {
+            this.commandSubmissionTime = (Time.realtimeSinceStartup - this.timestamp) * 1000f;
         }
 
         public override string ToString()
         {
-            return "[" + frameId.ToString() + "]" + "[" + timestamp.ToString() + "]" + "[" + cmd + "]" + "[" + response + "]";
+
+            StringBuilder builder = new StringBuilder();
+
+            builder.Append("[" + frameId.ToString() + "]")
+                .Append("[" + timestamp.ToString() + "]")           // global timestamp in secods
+                .Append("[" + deltaTimeLastCommand.ToString() + "]")// time since last command in milliseconds
+                .Append("[" + commandSubmissionTime.ToString() + "]")// time bluetooth took to send command
+                .Append("[" + cmd + "]")
+                .Append("[" + response + "]");
+
+            return builder.ToString();
         }
     }
     public class TactilityStimulatorManager : MonoBehaviour
@@ -106,6 +137,21 @@ namespace Inria.Tactility
 
         #endregion connectors
 
+        #region public events
+
+        [SerializeField]
+        private UnityEvent onStimulatorCouldntConnect;
+
+        [SerializeField]
+        private UnityEvent onStimulatorConnected;
+
+        [SerializeField]
+        private UnityEvent onStimStart;
+
+        [SerializeField]
+        private UnityEvent onStimEnd;
+        #endregion public events
+
         #region debugging information
         [Header("Debugging Info")]
 
@@ -169,9 +215,11 @@ namespace Inria.Tactility
             {
                 port.Open();
                 if (verbose) print("[" + this.GetType().Name + "] Connected to bluetooth device");
-                InitStimulator();
+                // InitStimulator();
+                StartCoroutine(InitStimulator());
             } catch (Exception e)
             {
+                onStimulatorCouldntConnect.Invoke();
                 UnityEngine.Debug.LogError("Error trying to open port " + portName + ": " + e.Message);
             }
 
@@ -183,6 +231,7 @@ namespace Inria.Tactility
             {
                 App2StimCmd cmd = new App2StimCmd("stim off");
                 port.WriteLine(cmd.cmd);
+                cmd.RecordSubmissionTime();
                 port.Close();
                 log.Add(cmd);
 
@@ -205,6 +254,7 @@ namespace Inria.Tactility
         {
             App2StimCmd startCmd = new App2StimCmd("stim on");
             port.WriteLine(startCmd.cmd); // should start all stim with selected=1
+            startCmd.RecordSubmissionTime();
 
             // if there was no velec with selected=1, the stim status wont change to "on"
             running = false;
@@ -237,6 +287,7 @@ namespace Inria.Tactility
         {
             App2StimCmd stopCmd = new App2StimCmd("stim off");
             port.WriteLine(stopCmd.cmd);
+            stopCmd.RecordSubmissionTime();
 
             // do not set stim.Selected=false
             // in reality, they are still selected
@@ -268,6 +319,7 @@ namespace Inria.Tactility
         {
             App2StimCmd freqCmd = new App2StimCmd("freq " + val);
             port.WriteLine(freqCmd.cmd);
+            freqCmd.RecordSubmissionTime();
             log.Add(freqCmd);
 
             frequency = val;
@@ -288,6 +340,7 @@ namespace Inria.Tactility
         {
             App2StimCmd playCmd = new App2StimCmd("stim " + name);
             port.WriteLine(playCmd.cmd);
+            playCmd.RecordSubmissionTime();
 
             if (verbose)
             {
@@ -308,6 +361,7 @@ namespace Inria.Tactility
         {
             App2StimCmd deselectCmd = new App2StimCmd("velec " + velecId.ToString() + " *selected 0");
             port.WriteLine(deselectCmd.cmd);
+            deselectCmd.RecordSubmissionTime();
 
             if (stimulations.ContainsKey(velecId))
             {
@@ -344,6 +398,7 @@ namespace Inria.Tactility
         {
             App2StimCmd defCommand = new App2StimCmd(stim.GetStimCommand());
             port.WriteLine(defCommand.cmd);
+            defCommand.RecordSubmissionTime();
 
             if (verbose)
             {
@@ -594,54 +649,70 @@ namespace Inria.Tactility
         /**
          * should be only called if the connection to the stim port was successful
          * */
-        void InitStimulator ()
+        IEnumerator InitStimulator ()
         {
             string rawAnswer;   // for system reponses
 
             App2StimCmd startCmd = new App2StimCmd("iam TACTILITY");
             port.WriteLine(startCmd.cmd);
+            startCmd.RecordSubmissionTime();
 
-            // if (verbose)
-            // {
-                deviceAnswer = port.ReadLine(); // required otherwise the next answers are a big mess
-                // print(deviceAnswer);
-                startCmd.response = deviceAnswer;
-            // }
+            deviceAnswer = port.ReadLine(); // required otherwise the next answers are a big mess
+            startCmd.response = deviceAnswer;
             log.Add(startCmd);
+
+            yield return new WaitForSecondsRealtime(0.1f);  // 100ms delay
 
             // query device
             App2StimCmd batteryCmd = new App2StimCmd("battery ?");
             port.WriteLine(batteryCmd.cmd);
+            batteryCmd.RecordSubmissionTime();
             rawAnswer = port.ReadLine();
             batteryLevel = rawAnswer.Remove(0, rawAnswer.IndexOf("battery") + 8);
             batteryCmd.response = batteryLevel;
             log.Add(batteryCmd);
 
+            yield return new WaitForSecondsRealtime(0.1f);  // 100ms delay
+
             App2StimCmd hardwareCmd = new App2StimCmd("hardware ?");
             port.WriteLine(hardwareCmd.cmd);
+            hardwareCmd.RecordSubmissionTime();
             rawAnswer = port.ReadLine();
             hardware = rawAnswer.Remove(0, rawAnswer.IndexOf("hardware") + 9);
             hardwareCmd.response = hardware;
             log.Add(hardwareCmd);
 
+            yield return new WaitForSecondsRealtime(0.1f);  // 100ms delay
+
             App2StimCmd firmwareCmd = new App2StimCmd("firmware ?");
             port.WriteLine(firmwareCmd.cmd);
+            firmwareCmd.RecordSubmissionTime();
             rawAnswer = port.ReadLine();
             firmware = rawAnswer.Remove(0, rawAnswer.IndexOf("firmware") + 9);
             firmwareCmd.response = firmware;
             log.Add(firmwareCmd);
 
+            yield return new WaitForSecondsRealtime(0.1f);  // 100ms delay
+
             App2StimCmd padsQTYCmd = new App2StimCmd("elec 1 *pads_qty 32");
             port.WriteLine(padsQTYCmd.cmd);
+            padsQTYCmd.RecordSubmissionTime();
             log.Add(padsQTYCmd);
+
+            yield return new WaitForSecondsRealtime(0.1f);  // 100ms delay
 
             SetFrequency(initialFrequency);
 
+            yield return new WaitForSecondsRealtime(0.1f);  // 100ms delay
+
             // deactive all previous virtual electrodes
-            DeactiveAllVE();
+            // DeactiveAllVE();
+            yield return StartCoroutine(DeactiveAllVE());
 
             // if there was any exeption before (while writing to the port, we wont get to this point)
             initialized = true; 
+
+            onStimulatorConnected.Invoke();
         }
 
         private void DumpLogFile ()
@@ -658,12 +729,13 @@ namespace Inria.Tactility
             writer.Close();
         }
 
-        private void DeactiveAllVE ()
+        private IEnumerator DeactiveAllVE ()
         {
             for (int i = 1; i <= 16; ++i)
             {
                 App2StimCmd deselectCmd = new App2StimCmd("velec " + i.ToString() + " *selected 0");
                 port.WriteLine(deselectCmd.cmd);
+                deselectCmd.RecordSubmissionTime();
 
                 if (verbose)
                 {
@@ -673,6 +745,8 @@ namespace Inria.Tactility
                 }
 
                 log.Add(deselectCmd);
+
+                yield return new WaitForSecondsRealtime(0.1f);  // 100ms delay
             }
         }
 
@@ -688,6 +762,7 @@ namespace Inria.Tactility
                 string valueStr = (value) ? "1" : "0";
                 App2StimCmd updateSelectedCmd = new App2StimCmd("velec " + id.ToString() + " *selected " + valueStr);
                 port.WriteLine(updateSelectedCmd.cmd);
+                updateSelectedCmd.RecordSubmissionTime();
                 if (verbose)
                 { 
                     deviceAnswer = port.ReadLine();
